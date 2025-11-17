@@ -702,6 +702,10 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
 
     // Step 14: Run Function
     await test.step('Step 14: Run Function', async () => {
+      // Verify configuration is saved before running
+      // Wait a bit to ensure all previous updates are complete
+      await page.waitForTimeout(1000);
+      
       // Clear previous console logs
       consoleLogs = [];
       

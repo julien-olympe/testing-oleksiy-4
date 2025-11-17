@@ -43,7 +43,9 @@ export const BrickNode: React.FC<NodeProps<BrickNodeData>> = ({ data }) => {
 
   const handleDatabaseSelect = useCallback(
     (dbName: string) => {
-      onConfigurationChange(brick.id, { ...brick.configuration, databaseName: dbName });
+      // Ensure configuration is always an object (handle null/undefined)
+      const currentConfig = brick.configuration && typeof brick.configuration === 'object' ? brick.configuration : {};
+      onConfigurationChange(brick.id, { ...currentConfig, databaseName: dbName });
       setShowDatabaseSelect(false);
     },
     [brick, onConfigurationChange]

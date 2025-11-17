@@ -45,12 +45,20 @@ export class ExecutionEngine {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
     }
 
+    // Normalize configurations (ensure they're always objects, not null)
+    for (const brick of func.bricks) {
+      if (!brick.configuration || typeof brick.configuration !== 'object') {
+        brick.configuration = {};
+      }
+    }
+
     // Log loaded function data for debugging
     console.log(`[ExecutionEngine] Loaded function: ${func.id} with ${func.bricks.length} bricks`);
     for (const brick of func.bricks) {
       console.log(`[ExecutionEngine] Brick ${brick.id} (${brick.type}):`);
       console.log(`  - connectionsFrom: ${brick.connectionsFrom.length}`);
       console.log(`  - connectionsTo: ${brick.connectionsTo.length}`);
+      console.log(`  - configuration:`, JSON.stringify(brick.configuration));
       if (brick.connectionsTo.length > 0) {
         console.log(`  - connectionsTo details:`, JSON.stringify(brick.connectionsTo.map(c => ({
           fromBrickId: c.fromBrickId,
@@ -130,12 +138,16 @@ export class ExecutionEngine {
         }
         if (!config.databaseName || typeof config.databaseName !== 'string' || config.databaseName.trim() === '') {
           console.log(`[ExecutionEngine] ListInstancesByDB validation failed - databaseName is missing or empty`);
+          console.log(`[ExecutionEngine] Full configuration object:`, JSON.stringify(config, null, 2));
+          console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(config));
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
             reason: `databaseName is ${config.databaseName === undefined ? 'undefined' : config.databaseName === null ? 'null' : `'${config.databaseName}' (type: ${typeof config.databaseName})`}`,
             configuration: brick.configuration,
+            configKeys: Object.keys(config),
+            fullConfig: config,
           });
         }
         console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${config.databaseName}`);

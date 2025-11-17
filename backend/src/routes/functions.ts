@@ -245,7 +245,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
           type: b.type,
           positionX: b.positionX,
           positionY: b.positionY,
-          configuration: b.configuration,
+          configuration: b.configuration && typeof b.configuration === 'object' ? b.configuration : {},
           createdAt: b.createdAt.toISOString(),
           updatedAt: b.updatedAt.toISOString(),
         })),
