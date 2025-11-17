@@ -439,25 +439,34 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       
       // Wait for Function Editor to load
       await page.waitForURL('**/functions/**', { timeout: 10000 });
-      await page.waitForLoadState('networkidle');
+      
+      // Wait for the function editor API call to complete
+      const editorResponse = await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      , { timeout: 15000 });
+      
+      // Check if API call was successful
+      if (editorResponse.status() !== 200) {
+        const responseBody = await editorResponse.text().catch(() => '');
+        throw new Error(`Function editor API failed with status ${editorResponse.status()}: ${responseBody}`);
+      }
+      
+      // Wait for function editor content to be visible OR error message (after API data loads)
+      await Promise.race([
+        page.waitForSelector('.function-editor-content', { timeout: 15000 }).catch(() => null),
+        page.waitForSelector('.error-message, .error-notification, [class*="ErrorNotification"]', { timeout: 15000 }).catch(() => null),
+      ]);
       
       // Check for error messages first
-      const errorNotification = page.locator('.error-notification, [class*="ErrorNotification"]');
+      const errorNotification = page.locator('.error-notification, [class*="ErrorNotification"], .error-message');
       const hasError = await errorNotification.isVisible().catch(() => false);
       if (hasError) {
         const errorText = await errorNotification.textContent();
         throw new Error(`Function editor error: ${errorText}`);
       }
       
-      // Wait for function editor to finish loading (either content visible or error message)
-      await Promise.race([
-        page.waitForSelector('.function-editor-content', { timeout: 15000 }).catch(() => null),
-        page.waitForSelector('.error-message', { timeout: 15000 }).catch(() => null),
-        page.waitForTimeout(15000)
-      ]);
-      
       // Verify function editor content is visible (not in error state)
-      await expect(page.locator('.function-editor-content, .function-editor')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.function-editor-content')).toBeVisible({ timeout: 5000 });
       
       // Wait for loading spinner to disappear (editor is loading)
       await page.waitForSelector('.loading-spinner', { state: 'hidden', timeout: 10000 }).catch(() => {
@@ -481,55 +490,84 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
     // Step 11: Add Bricks to Function Editor
     await test.step('Step 11: Add Bricks to Function Editor', async () => {
       // Get the React Flow canvas
-      const canvas = page.locator('.react-flow, [class*="react-flow"]').first();
+      const canvas = page.locator('.react-flow, [class*="react-flow"], .function-editor-canvas').first();
       await expect(canvas).toBeVisible();
       
-      // Drag "List instances by DB name" brick
+      // Drag "List instances by DB name" brick and wait for API response
       const listBrick = page.locator('.brick-item:has-text("List instances by DB name")');
+      const createBrick1Promise = page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/bricks') && response.request().method() === 'POST'
+      );
       await listBrick.dragTo(canvas, { targetPosition: { x: 200, y: 200 } });
-      await page.waitForTimeout(1000);
+      await createBrick1Promise;
+      // Wait for editor data refresh after brick creation
+      await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
+      await page.waitForTimeout(500);
       
-      // Drag "Get first instance" brick
+      // Drag "Get first instance" brick and wait for API response
       const getFirstBrick = page.locator('.brick-item:has-text("Get first instance")');
+      const createBrick2Promise = page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/bricks') && response.request().method() === 'POST'
+      );
       await getFirstBrick.dragTo(canvas, { targetPosition: { x: 400, y: 200 } });
-      await page.waitForTimeout(1000);
+      await createBrick2Promise;
+      // Wait for editor data refresh after brick creation
+      await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
+      await page.waitForTimeout(500);
       
-      // Drag "Log instance props" brick
+      // Drag "Log instance props" brick and wait for API response
       const logBrick = page.locator('.brick-item:has-text("Log instance props")');
+      const createBrick3Promise = page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/bricks') && response.request().method() === 'POST'
+      );
       await logBrick.dragTo(canvas, { targetPosition: { x: 600, y: 200 } });
-      await page.waitForTimeout(1000);
+      await createBrick3Promise;
+      // Wait for editor data refresh after brick creation
+      await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
+      await page.waitForTimeout(500);
       
       // Verify all bricks are on canvas (check for React Flow nodes)
       const nodes = page.locator('.react-flow__node');
-      await expect(nodes).toHaveCount(3, { timeout: 5000 });
+      await expect(nodes).toHaveCount(3, { timeout: 10000 });
     });
 
     // Step 12: Set Brick Input Parameter
     await test.step('Step 12: Set Brick Input Parameter', async () => {
-      // Find the "List instances by DB name" node
+      // Find the "List instances by DB name" node (first node should be this one)
       const listNode = page.locator('.react-flow__node').first();
+      await expect(listNode).toBeVisible();
       
-      // Click on the input parameter (look for input handle or parameter area)
-      const inputHandle = listNode.locator('[data-handleid*="input"], .react-flow__handle-left, [class*="input"]').first();
-      await inputHandle.click({ force: true });
-      await page.waitForTimeout(500);
+      // Click the database select button inside the node
+      const dbSelectButton = listNode.locator('button.database-select-button, button:has-text("Select DB")');
+      await expect(dbSelectButton).toBeVisible({ timeout: 5000 });
+      await dbSelectButton.click();
+      await page.waitForTimeout(300);
       
-      // Look for dropdown or selection interface
-      const dropdown = page.locator('select, [role="combobox"], .dropdown, [class*="select"]').first();
-      if (await dropdown.isVisible().catch(() => false)) {
-        await dropdown.selectOption('default database');
-      } else {
-        // Try clicking on the node to open configuration
-        await listNode.click();
-        await page.waitForTimeout(500);
-        
-        // Look for database selection in a modal or panel
-        const dbOption = page.locator('text=default database').first();
-        if (await dbOption.isVisible().catch(() => false)) {
-          await dbOption.click();
-        }
-      }
+      // Wait for dropdown to appear and click "default database" option
+      const dbDropdown = listNode.locator('.database-select-dropdown');
+      await expect(dbDropdown).toBeVisible({ timeout: 5000 });
       
+      const dbOption = dbDropdown.locator('button.database-option:has-text("default database")');
+      await expect(dbOption).toBeVisible({ timeout: 5000 });
+      
+      // Wait for API response after selecting database
+      const updateBrickPromise = page.waitForResponse(response => 
+        response.url().includes('/bricks/') && response.request().method() === 'PUT'
+      );
+      
+      await dbOption.click();
+      await updateBrickPromise;
+      
+      // Wait for editor data refresh
+      await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
       await page.waitForTimeout(500);
     });
 

@@ -119,7 +119,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // PUT /api/v1/bricks/:id
   fastify.put<{ Body: UpdateBrickBody }>(
-    '/:id',
+    '/bricks/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest & { body: UpdateBrickBody }, reply) => {
       const userId = request.userId!;
@@ -216,7 +216,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/bricks/:id
   fastify.delete(
-    '/:id',
+    '/bricks/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
@@ -249,7 +249,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // POST /api/v1/bricks/:id/connections
   fastify.post<{ Body: CreateConnectionBody }>(
-    '/:id/connections',
+    '/bricks/:id/connections',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest & { body: CreateConnectionBody }, reply) => {
       const userId = request.userId!;
@@ -345,7 +345,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/bricks/:id/connections/:connectionId
   fastify.delete(
-    '/:id/connections/:connectionId',
+    '/bricks/:id/connections/:connectionId',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
