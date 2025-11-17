@@ -57,6 +57,11 @@ async function buildServer() {
     reply.header('Content-Security-Policy', "default-src 'self'");
   });
 
+  // Health check endpoint
+  fastify.get('/api/health', async () => {
+    return { status: 'ok' };
+  });
+
   // Register routes
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
   await fastify.register(userRoutes, { prefix: '/api/v1/users' });
@@ -64,7 +69,7 @@ async function buildServer() {
   await fastify.register(functionRoutes, { prefix: '/api/v1' });
   await fastify.register(permissionRoutes, { prefix: '/api/v1' });
   await fastify.register(databaseRoutes, { prefix: '/api/v1' });
-  await fastify.register(brickRoutes, { prefix: '/api/v1' });
+  await fastify.register(brickRoutes, { prefix: '/api/v1/bricks' });
   await fastify.register(executionRoutes, { prefix: '/api/v1' });
 
   // Error handler

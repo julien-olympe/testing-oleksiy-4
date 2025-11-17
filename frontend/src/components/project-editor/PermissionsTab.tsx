@@ -12,7 +12,7 @@ interface PermissionsTabProps {
 
 export const PermissionsTab: React.FC<PermissionsTabProps> = ({
   projectId,
-  permissions,
+  permissions = [],
   onDataChange,
   onError,
 }) => {
