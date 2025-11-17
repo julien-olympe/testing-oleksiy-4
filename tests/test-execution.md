@@ -16,7 +16,7 @@ This report documents the comprehensive test execution for the visual programmin
 - ✅ **TypeScript Build (Backend):** PASSED (after fixes)
 - ✅ **TypeScript Build (Frontend):** PASSED
 - ✅ **Health Check Unit Tests:** PASSED (3/3 tests)
-- ⚠️ **Critical Path E2E Test:** PARTIALLY PASSED (11/14 steps passing, Steps 12-14 in progress)
+- ⚠️ **Critical Path E2E Test:** PARTIALLY PASSED (12/14 steps passing, Step 13 blocked by frontend CSS issue, Step 14 not reached)
 
 ---
 
@@ -173,7 +173,7 @@ The critical path test covers the following use cases:
 
 ### 4.3 Execution Status
 
-**Status:** ⚠️ PARTIALLY PASSED (11/14 steps passing, Steps 12-14 in progress)
+**Status:** ⚠️ PARTIALLY PASSED (12/14 steps passing, Step 13 blocked by frontend issue, Step 14 not reached)
 
 **Test Execution Date:** 2025-01-17  
 **Test Command:** `cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --reporter=list`  
@@ -320,10 +320,11 @@ The critical path test covers the following use cases:
   - Updated test to wait for POST and GET API responses after brick creation
 
 #### Step 12: Set Brick Input Parameter
-- **Status:** ⚠️ IN PROGRESS (fixes applied, needs verification)
+- **Status:** ✅ PASSED
 - **Details:**
-  - Test updated to click database select button and select "default database" option
-  - Waiting for API responses after database selection
+  - Test successfully clicks database select button and selects "default database" option
+  - API responses (PUT request and editor refresh) complete successfully
+  - Database selection works correctly
 - **Issues Fixed:**
   - **Root Cause:** Test was trying to use `selectOption()` on a non-select element
   - **Fix Applied:** Updated test to:
@@ -331,16 +332,37 @@ The critical path test covers the following use cases:
     - Wait for dropdown to appear
     - Click the "default database" option button
     - Wait for API responses (PUT request and editor refresh)
-- **Remaining Work:**
-  - Verify database selection works correctly
-  - Ensure API calls complete successfully
+- **Result:** Step 12 now passes consistently ✅
 
-#### Steps 13-14: Not Yet Fully Tested
+#### Step 13: Link Bricks
+- **Status:** ❌ FAILED (known issue - requires frontend fix)
+- **Details:**
+  - Test attempts to create connections between bricks using mouse drag operations
+  - Connections need to be created: "List instances by DB name" → "Get first instance" → "Log instance props"
+- **Issues Identified:**
+  - **Root Cause:** React Flow handle interactions are blocked by `brick-node` div intercepting pointer events
+  - **Error:** "brick-node subtree intercepts pointer events" when trying to interact with handles
+  - **Attempted Fixes:**
+    1. Used `dragTo()` method - blocked by pointer events
+    2. Used `hover()` on handles - blocked by pointer events
+    3. Used direct mouse coordinates with `page.mouse.move/down/up` - connections not created
+    4. Used JavaScript event dispatching - React Flow doesn't respond to custom events
+    5. Added fallback selectors and improved waits - handles found but connections still not created
+- **Required Fix:**
+  - **Option 1 (Recommended):** Update CSS to allow pointer events on React Flow handles
+    - Modify `.brick-node` CSS to use `pointer-events: none` and allow `pointer-events: auto` on `.brick-handle`
+  - **Option 2:** Add a test API endpoint to create connections programmatically for E2E tests
+  - **Option 3:** Expose React Flow's `onConnect` handler via a test utility function
+- **Impact:** Step 13 cannot complete until frontend CSS/configuration is fixed
+- **Test Code:** Test code is correct and ready - issue is in frontend component CSS/pointer-events configuration
+
+#### Step 14: Run Function
 - **Status:** ⚠️ NOT YET REACHED
-- **Reason:** Test currently at Step 12, working on brick parameter configuration
+- **Reason:** Blocked by Step 13 failure
 - **Steps To Test:**
-  - Step 13: Linking Bricks (connect all three bricks)
-  - Step 14: Running Function (click RUN button, verify console shows 'First Instance Value')
+  - Click RUN button
+  - Verify console shows 'First Instance Value'
+  - Verify execution completes successfully
 
 ### 4.5 Terminal Output Summary
 
@@ -486,7 +508,7 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 - Framework: Playwright (installed and configured)
 - Configuration: ✅ Complete
 - Test File: `/workspace/frontend/e2e/critical-path.spec.ts`
-- Results: 11 steps passed (Steps 1-11), Step 12 in progress, 2 steps not reached (Steps 13-14)
+- Results: 12 steps passed (Steps 1-12), Step 13 blocked by frontend CSS issue, Step 14 not reached
 - Execution Time: ~28 seconds per run
 
 ---
@@ -499,7 +521,10 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 2. ✅ **Completed:** Set up health check unit tests
 3. ✅ **Completed:** Create Playwright configuration for E2E tests
 4. ✅ **Completed:** Implement critical path E2E test script
-5. ✅ **Completed:** Execute E2E test with services running (11/14 steps passing, Steps 12-14 in progress)
+5. ✅ **Completed:** Execute E2E test with services running (12/14 steps passing)
+6. ✅ **Completed:** Fix Step 12 (Set Brick Input Parameter) - now passing
+7. ⚠️ **BLOCKED:** Step 13 (Link Bricks) - requires frontend CSS fix for pointer events
+8. ⚠️ **PENDING:** Step 14 (Run Function) - blocked by Step 13
 
 ### 8.2 Future Improvements
 
@@ -572,10 +597,15 @@ The comprehensive test execution has successfully:
 8. ✅ **COMPLETED:** Fix Step 11 (Add Bricks to Function Editor)
    - Brick creation working ✅
    - Backend route registration fixes applied ✅
-9. ⚠️ **IN PROGRESS:** Fix Step 12 (Set Brick Input Parameter)
+9. ✅ **COMPLETED:** Fix Step 12 (Set Brick Input Parameter)
    - Test updated to use correct UI interactions ✅
-   - Needs verification run
-10. Execute remaining E2E test steps (13-14) after Step 12 is complete
+   - Database selection working correctly ✅
+   - Step 12 now passing ✅
+10. ⚠️ **BLOCKED:** Step 13 (Link Bricks)
+    - Issue: React Flow handles blocked by brick-node pointer events
+    - Required: Frontend CSS fix (allow pointer-events on handles)
+    - Test code is correct, waiting for frontend fix
+11. ⚠️ **PENDING:** Step 14 (Run Function) - blocked by Step 13
 6. Expand test coverage for all API endpoints
 
 ---
@@ -635,7 +665,10 @@ cd /workspace/frontend && npm run test:e2e
 **Total Execution Time:** ~20 minutes  
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
-- E2E Tests: 1 (partially passed - 11/14 steps)
-**Tests Passed:** 3 unit tests + 11 E2E steps  
-**Tests Failed:** 0 unit tests + 0 E2E steps (Steps 12-14 in progress, not failed)
-**Test Fixes Applied:** 11 E2E test issues fixed + 5 backend API fixes + 1 frontend component fix
+- E2E Tests: 1 (partially passed - 12/14 steps)
+**Tests Passed:** 3 unit tests + 12 E2E steps  
+**Tests Failed:** 0 unit tests + 1 E2E step (Step 13 - blocked by frontend CSS issue)
+**Test Fixes Applied:** 12 E2E test issues fixed + 5 backend API fixes + 1 frontend component fix
+**Known Issues:**
+- Step 13: React Flow connection creation blocked by brick-node CSS pointer-events interception
+- Required Fix: Update frontend CSS to allow pointer events on React Flow handles

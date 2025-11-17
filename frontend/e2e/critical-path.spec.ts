@@ -573,31 +573,154 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
 
     // Step 13: Link Bricks
     await test.step('Step 13: Link Bricks', async () => {
+      // Wait a bit to ensure Step 12 completed and page is stable
+      await page.waitForTimeout(1000);
+      
       // Get all nodes
       const nodes = page.locator('.react-flow__node');
+      await expect(nodes).toHaveCount(3, { timeout: 10000 });
+      
+      // Verify nodes are visible
       const listNode = nodes.first();
       const getFirstNode = nodes.nth(1);
       const logNode = nodes.nth(2);
       
+      await expect(listNode).toBeVisible({ timeout: 5000 });
+      await expect(getFirstNode).toBeVisible({ timeout: 5000 });
+      await expect(logNode).toBeVisible({ timeout: 5000 });
+      
       // Find output handle of "List instances by DB name" (right side)
-      const listOutput = listNode.locator('.react-flow__handle-right, [data-handleid*="output"], [data-handleid*="List"]').first();
+      // Try multiple selector strategies
+      let listOutput = listNode.locator('.react-flow__handle-right[data-handleid*="List"]').first();
+      if (!(await listOutput.isVisible().catch(() => false))) {
+        // Fallback: just get the right handle (should be the output)
+        listOutput = listNode.locator('.react-flow__handle-right').first();
+      }
+      await expect(listOutput).toBeVisible({ timeout: 10000 });
       
       // Find input handle of "Get first instance" (left side)
-      const getFirstInput = getFirstNode.locator('.react-flow__handle-left, [data-handleid*="input"], [data-handleid*="List"]').first();
+      let getFirstInput = getFirstNode.locator('.react-flow__handle-left[data-handleid*="List"]').first();
+      if (!(await getFirstInput.isVisible().catch(() => false))) {
+        // Fallback: just get the left handle (should be the input)
+        getFirstInput = getFirstNode.locator('.react-flow__handle-left').first();
+      }
+      await expect(getFirstInput).toBeVisible({ timeout: 10000 });
       
-      // Drag from output to input
-      await listOutput.dragTo(getFirstInput);
+      // Get bounding boxes (skip hover since brick-node intercepts)
+      const listOutputBox = await listOutput.boundingBox();
+      const getFirstInputBox = await getFirstInput.boundingBox();
+      
+      if (!listOutputBox || !getFirstInputBox) {
+        throw new Error('Could not get bounding boxes for handles');
+      }
+      
+      // Start drag from output handle center
+      const startX = listOutputBox.x + listOutputBox.width / 2;
+      const startY = listOutputBox.y + listOutputBox.height / 2;
+      const endX = getFirstInputBox.x + getFirstInputBox.width / 2;
+      const endY = getFirstInputBox.y + getFirstInputBox.height / 2;
+      
+      // Use direct mouse coordinates to create connection
+      // Scroll handles into view first
+      await listOutput.scrollIntoViewIfNeeded();
+      await getFirstInput.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(200);
+      
+      // Get fresh bounding boxes after scroll
+      const listOutputBoxFresh = await listOutput.boundingBox();
+      const getFirstInputBoxFresh = await getFirstInput.boundingBox();
+      
+      if (!listOutputBoxFresh || !getFirstInputBoxFresh) {
+        throw new Error('Could not get bounding boxes for handles after scroll');
+      }
+      
+      // Calculate center coordinates
+      const startX2 = listOutputBoxFresh.x + listOutputBoxFresh.width / 2;
+      const startY2 = listOutputBoxFresh.y + listOutputBoxFresh.height / 2;
+      const endX2 = getFirstInputBoxFresh.x + getFirstInputBoxFresh.width / 2;
+      const endY2 = getFirstInputBoxFresh.y + getFirstInputBoxFresh.height / 2;
+      
+      // Perform drag operation using mouse API
+      await page.mouse.move(startX2, startY2);
+      await page.waitForTimeout(100);
+      await page.mouse.down();
+      await page.waitForTimeout(100);
+      // Move slowly to target
+      await page.mouse.move(endX2, endY2, { steps: 30 });
+      await page.waitForTimeout(200);
+      await page.mouse.up();
       await page.waitForTimeout(1000);
       
-      // Find output handle of "Get first instance"
-      const getFirstOutput = getFirstNode.locator('.react-flow__handle-right, [data-handleid*="output"], [data-handleid*="DB"]').first();
+      // Wait for API response after connection (POST to /bricks/{id}/connections)
+      await page.waitForResponse(response => 
+        response.url().includes('/bricks/') && response.url().includes('/connections') && response.request().method() === 'POST'
+      , { timeout: 10000 }).catch(() => {
+        // If API call fails, the connection might still be created client-side
+        console.log('Connection API call not detected, continuing...');
+      });
       
-      // Find input handle of "Log instance props"
-      const logInput = logNode.locator('.react-flow__handle-left, [data-handleid*="input"], [data-handleid*="Object"]').first();
-      
-      // Drag from output to input
-      await getFirstOutput.dragTo(logInput);
+      // Wait a bit for React Flow to update
       await page.waitForTimeout(1000);
+      
+      // Re-query nodes to ensure they're still valid after connection
+      const nodesAfterFirst = page.locator('.react-flow__node');
+      await expect(nodesAfterFirst).toHaveCount(3, { timeout: 5000 });
+      const getFirstNodeAfter = nodesAfterFirst.nth(1);
+      
+      // Find output handle of "Get first instance" (right side)
+      let getFirstOutput = getFirstNodeAfter.locator('.react-flow__handle-right[data-handleid*="DB"]').first();
+      if (!(await getFirstOutput.isVisible().catch(() => false))) {
+        getFirstOutput = getFirstNodeAfter.locator('.react-flow__handle-right').first();
+      }
+      await expect(getFirstOutput).toBeVisible({ timeout: 10000 });
+      
+      // Re-query log node to ensure it's still valid
+      const logNodeAfter = nodesAfterFirst.nth(2);
+      
+      // Find input handle of "Log instance props" (left side)
+      let logInput = logNodeAfter.locator('.react-flow__handle-left[data-handleid*="Object"]').first();
+      if (!(await logInput.isVisible().catch(() => false))) {
+        logInput = logNodeAfter.locator('.react-flow__handle-left').first();
+      }
+      await expect(logInput).toBeVisible({ timeout: 10000 });
+      
+      // Scroll handles into view first
+      await getFirstOutput.scrollIntoViewIfNeeded();
+      await logInput.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(200);
+      
+      // Get fresh bounding boxes after scroll
+      const getFirstOutputBoxFresh = await getFirstOutput.boundingBox();
+      const logInputBoxFresh = await logInput.boundingBox();
+      
+      if (!getFirstOutputBoxFresh || !logInputBoxFresh) {
+        throw new Error('Could not get bounding boxes for handles after scroll');
+      }
+      
+      // Calculate center coordinates
+      const startX3 = getFirstOutputBoxFresh.x + getFirstOutputBoxFresh.width / 2;
+      const startY3 = getFirstOutputBoxFresh.y + getFirstOutputBoxFresh.height / 2;
+      const endX3 = logInputBoxFresh.x + logInputBoxFresh.width / 2;
+      const endY3 = logInputBoxFresh.y + logInputBoxFresh.height / 2;
+      
+      // Perform drag operation using mouse API
+      await page.mouse.move(startX3, startY3);
+      await page.waitForTimeout(100);
+      await page.mouse.down();
+      await page.waitForTimeout(100);
+      // Move slowly to target
+      await page.mouse.move(endX3, endY3, { steps: 30 });
+      await page.waitForTimeout(200);
+      await page.mouse.up();
+      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1000);
+      
+      // Wait for API response after connection (if endpoint exists)
+      await page.waitForResponse(response => 
+        response.url().includes('/bricks/') && response.url().includes('/connections') && response.request().method() === 'POST'
+      , { timeout: 5000 }).catch(() => {
+        // Connection API might not exist or might use different endpoint - that's OK
+      });
       
       // Verify connections exist (check for edges)
       const edges = page.locator('.react-flow__edge');
