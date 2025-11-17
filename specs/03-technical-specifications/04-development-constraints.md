@@ -73,7 +73,7 @@ This document defines the mandatory development constraints, standards, and meth
 **Input Sanitization and Injection Prevention:**
 - All user inputs sanitized before database storage, HTML entity encoding for user-generated content
 - SQL injection prevention via parameterized queries exclusively, no string concatenation in SQL queries
-- Query builders (Knex.js or Prisma) enforce parameterization, input validation before query construction
+- Prisma ORM enforces parameterization, input validation before query construction
 
 **XSS Prevention:**
 - React automatically escapes user content in JSX, dangerous HTML rendering prohibited (no innerHTML)
