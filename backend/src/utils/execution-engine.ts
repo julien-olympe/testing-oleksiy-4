@@ -45,6 +45,21 @@ export class ExecutionEngine {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
     }
 
+    // Log loaded function data for debugging
+    console.log(`[ExecutionEngine] Loaded function: ${func.id} with ${func.bricks.length} bricks`);
+    for (const brick of func.bricks) {
+      console.log(`[ExecutionEngine] Brick ${brick.id} (${brick.type}):`);
+      console.log(`  - connectionsFrom: ${brick.connectionsFrom.length}`);
+      console.log(`  - connectionsTo: ${brick.connectionsTo.length}`);
+      if (brick.connectionsTo.length > 0) {
+        console.log(`  - connectionsTo details:`, JSON.stringify(brick.connectionsTo.map(c => ({
+          fromBrickId: c.fromBrickId,
+          fromOutputName: c.fromOutputName,
+          toInputName: c.toInputName,
+        }))));
+      }
+    }
+
     // Validate function structure
     this.validateFunction(func.bricks);
 
@@ -100,14 +115,19 @@ export class ExecutionEngine {
     // Check for required inputs
     for (const brick of bricks) {
       if (brick.type === 'ListInstancesByDB') {
+        console.log(`[ExecutionEngine] Validating ListInstancesByDB brick: ${brick.id}`);
+        console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
         const config = brick.configuration as { databaseName?: string };
         if (!config || !config.databaseName || typeof config.databaseName !== 'string') {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - missing databaseName`);
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
+            configuration: brick.configuration,
           });
         }
+        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${config.databaseName}`);
       }
     }
 
@@ -185,6 +205,11 @@ export class ExecutionEngine {
     context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
+    // Log brick execution details for debugging
+    console.log(`[ExecutionEngine] Executing brick: ${brick.type} (${brick.id})`);
+    console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
+    console.log(`[ExecutionEngine] ConnectionsTo:`, JSON.stringify(brick.connectionsTo));
+    
     switch (brick.type) {
       case 'ListInstancesByDB':
         return this.executeListInstancesByDB(brick, context, projectId);
@@ -293,12 +318,16 @@ export class ExecutionEngine {
     context: ExecutionContext
   ): Promise<ExecutionResult> {
     // Find input connection
+    console.log(`[ExecutionEngine] GetFirstInstance - Looking for 'List' input connection`);
+    console.log(`[ExecutionEngine] GetFirstInstance - Available connectionsTo:`, JSON.stringify(brick.connectionsTo));
     const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'List');
     if (!inputConnection) {
+      console.log(`[ExecutionEngine] GetFirstInstance - No 'List' input connection found`);
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,
         brickType: 'GetFirstInstance',
         missingInputs: ['List'],
+        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 
@@ -336,12 +365,16 @@ export class ExecutionEngine {
     context: ExecutionContext
   ): Promise<ExecutionResult> {
     // Find input connection (frontend uses 'Object' as input name)
+    console.log(`[ExecutionEngine] LogInstanceProps - Looking for 'Object' or 'Instance' input connection`);
+    console.log(`[ExecutionEngine] LogInstanceProps - Available connectionsTo:`, JSON.stringify(brick.connectionsTo));
     const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Object' || c.toInputName === 'Instance');
     if (!inputConnection) {
+      console.log(`[ExecutionEngine] LogInstanceProps - No 'Object' or 'Instance' input connection found`);
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
         missingInputs: ['Object'],
+        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 

@@ -704,6 +704,15 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       const runResponse = await runResponsePromise;
       if (runResponse.status() !== 200) {
         const responseBody = await runResponse.text().catch(() => '');
+        try {
+          const responseJson = JSON.parse(responseBody);
+          console.log('Full error response:', JSON.stringify(responseJson, null, 2));
+          if (responseJson.error && responseJson.error.details) {
+            console.log('Error details:', JSON.stringify(responseJson.error.details, null, 2));
+          }
+        } catch (e) {
+          console.log('Error response (not JSON):', responseBody);
+        }
         throw new Error(`Function execution failed with status ${runResponse.status()}: ${responseBody}`);
       }
       
