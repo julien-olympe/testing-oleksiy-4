@@ -20,7 +20,7 @@ The application maintains a single-page application architecture where screen tr
 - Project Editor → Function Editor (double-click on function)
 - Any Screen → Login Screen (via logout)
 
-**Breadcrumb Navigation**: Not provided. Users navigate back by closing editors or using browser navigation controls.
+**Breadcrumb Navigation**: Not provided. Users navigate back by closing editors using back buttons in editor headers.
 
 ## Login Screen
 
@@ -30,17 +30,17 @@ The application maintains a single-page application architecture where screen tr
 - Email address input field
 - Password input field
 - Login button
-- Register link or button
-- Application title or branding
+- Register button
+- Application title
 
 **Navigation**:
 - Clicking Login button with valid credentials navigates to Home Screen
-- Clicking Register link navigates to registration interface (if separate) or shows registration form
+- Clicking Register button shows registration form on the Login Screen
 - After successful registration, user is automatically logged in and navigated to Home Screen
 
 **Related Use Cases**: Register, Login
 
-**Error Handling**: Error messages display below the form or near relevant input fields when authentication fails or validation errors occur.
+**Error Handling**: Error messages display below the form when authentication fails or validation errors occur.
 
 ## Home Screen
 
@@ -57,11 +57,11 @@ The application maintains a single-page application architecture where screen tr
 - Each brick in the list is draggable
 
 **Center and Right Area**:
-- Project list: Grid or list view displaying all projects belonging to the authenticated user
+- Project list: Grid view displaying all projects belonging to the authenticated user
 - Each project item displays the project name and supports:
   - Double-click to open Project Editor
-  - Rename action (context menu or inline editing)
-  - Delete action (context menu or delete button)
+  - Rename action (inline editing)
+  - Delete action (delete button)
 
 **Top-Right**:
 - Round settings icon button
@@ -96,11 +96,11 @@ The application maintains a single-page application architecture where screen tr
 - Each brick in the list is draggable
 
 **Project Tab Content Area**:
-- Function list: Grid or list view displaying all functions in the project
+- Function list: Grid view displaying all functions in the project
 - Each function item displays the function name and supports:
   - Double-click to open Function Editor
-  - Rename action (context menu or inline editing)
-  - Delete action (context menu or delete button)
+  - Rename action (inline editing)
+  - Delete action (delete button)
 
 **Permissions Tab Content Area**:
 - User list: List displaying all users who have permissions for the project
@@ -175,7 +175,7 @@ The application maintains a single-page application architecture where screen tr
 
 **Navigation**:
 - Clicking settings icon opens settings menu with logout option
-- Closing the Function Editor returns to Project Editor (implementation-specific: may use back button, close button, or navigation control)
+- Closing the Function Editor returns to Project Editor using a back button in the editor header.
 
 **Related Use Cases**: Add Brick to Function Editor, Link Bricks, Set Brick Input Parameter, Run Function, Logout
 
