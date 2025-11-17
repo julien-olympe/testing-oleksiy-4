@@ -118,12 +118,23 @@ export class ExecutionEngine {
         console.log(`[ExecutionEngine] Validating ListInstancesByDB brick: ${brick.id}`);
         console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
         const config = brick.configuration as { databaseName?: string };
-        if (!config || !config.databaseName || typeof config.databaseName !== 'string') {
-          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - missing databaseName`);
+        if (!config) {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - configuration is null/undefined`);
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
+            reason: 'Configuration is null or undefined',
+            configuration: brick.configuration,
+          });
+        }
+        if (!config.databaseName || typeof config.databaseName !== 'string' || config.databaseName.trim() === '') {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - databaseName is missing or empty`);
+          throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
+            brickId: brick.id,
+            brickType: brick.type,
+            missingInputs: ['databaseName'],
+            reason: `databaseName is ${config.databaseName === undefined ? 'undefined' : config.databaseName === null ? 'null' : `'${config.databaseName}' (type: ${typeof config.databaseName})`}`,
             configuration: brick.configuration,
           });
         }
@@ -333,13 +344,29 @@ export class ExecutionEngine {
 
     const sourceOutput = context.brickOutputs.get(inputConnection.fromBrickId);
     if (!sourceOutput) {
+      console.log(`[ExecutionEngine] GetFirstInstance - Source brick output not found for fromBrickId: ${inputConnection.fromBrickId}`);
+      console.log(`[ExecutionEngine] GetFirstInstance - Available brick outputs:`, Array.from(context.brickOutputs.keys()));
       throw new BusinessLogicError('EXECUTION_FAILED', 'Source brick output not found', {
         brickId: brick.id,
         brickType: 'GetFirstInstance',
+        fromBrickId: inputConnection.fromBrickId,
+        availableBrickIds: Array.from(context.brickOutputs.keys()),
       });
     }
 
-    const list = sourceOutput[inputConnection.fromOutputName] as Array<{ id: string; values: Record<string, string> }> | undefined;
+    console.log(`[ExecutionEngine] GetFirstInstance - Source output keys:`, Object.keys(sourceOutput));
+    console.log(`[ExecutionEngine] GetFirstInstance - Looking for key: ${inputConnection.fromOutputName}`);
+    
+    // Try to get list from source output using fromOutputName
+    // Also try 'list' as fallback (in case connection was created with different output name)
+    let list = sourceOutput[inputConnection.fromOutputName] as Array<{ id: string; values: Record<string, string> }> | undefined;
+    if (!list && inputConnection.fromOutputName !== 'list') {
+      // Try 'list' as fallback
+      list = sourceOutput['list'] as Array<{ id: string; values: Record<string, string> }> | undefined;
+      if (list) {
+        console.log(`[ExecutionEngine] GetFirstInstance - Found list using fallback key 'list'`);
+      }
+    }
 
     if (!Array.isArray(list) || list.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'List is empty, cannot get first instance', {
@@ -380,18 +407,39 @@ export class ExecutionEngine {
 
     const sourceOutput = context.brickOutputs.get(inputConnection.fromBrickId);
     if (!sourceOutput) {
+      console.log(`[ExecutionEngine] LogInstanceProps - Source brick output not found for fromBrickId: ${inputConnection.fromBrickId}`);
+      console.log(`[ExecutionEngine] LogInstanceProps - Available brick outputs:`, Array.from(context.brickOutputs.keys()));
       throw new BusinessLogicError('EXECUTION_FAILED', 'Source brick output not found', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
+        fromBrickId: inputConnection.fromBrickId,
+        availableBrickIds: Array.from(context.brickOutputs.keys()),
       });
     }
 
-    const instance = sourceOutput[inputConnection.fromOutputName] as { id: string; values: Record<string, string> } | undefined;
+    console.log(`[ExecutionEngine] LogInstanceProps - Source output keys:`, Object.keys(sourceOutput));
+    console.log(`[ExecutionEngine] LogInstanceProps - Looking for key: ${inputConnection.fromOutputName}`);
+    
+    // Try to get instance from source output using fromOutputName
+    // Also try 'DB' as fallback (in case connection was created with old output name)
+    let instance = sourceOutput[inputConnection.fromOutputName] as { id: string; values: Record<string, string> } | undefined;
+    if (!instance && inputConnection.fromOutputName !== 'DB') {
+      // Try 'DB' as fallback
+      instance = sourceOutput['DB'] as { id: string; values: Record<string, string> } | undefined;
+      if (instance) {
+        console.log(`[ExecutionEngine] LogInstanceProps - Found instance using fallback key 'DB'`);
+      }
+    }
 
     if (!instance) {
+      console.log(`[ExecutionEngine] LogInstanceProps - Instance not found. Source output:`, JSON.stringify(sourceOutput));
+      console.log(`[ExecutionEngine] LogInstanceProps - fromOutputName: ${inputConnection.fromOutputName}`);
       throw new BusinessLogicError('EXECUTION_FAILED', 'Instance not found in input', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
+        fromOutputName: inputConnection.fromOutputName,
+        sourceOutputKeys: Object.keys(sourceOutput),
+        sourceOutput: sourceOutput,
       });
     }
 
