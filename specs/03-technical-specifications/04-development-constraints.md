@@ -37,8 +37,8 @@ This document defines the mandatory development constraints, standards, and meth
 ### Graceful Degradation
 
 **Feature and Performance Degradation:**
-- Core features (login, project access) always available, non-critical features (real-time updates) degrade silently
-- Visual editor works without WebSocket connections, offline mode: Read-only access to cached data
+- Core features (login, project access) always available, non-critical features degrade silently
+- Visual editor works without real-time connections
 - Response time increases logged but service continues, rate limiting prevents resource exhaustion
 - Queue system for high-load operations, automatic scaling triggers on performance degradation
 
@@ -61,7 +61,7 @@ This document defines the mandatory development constraints, standards, and meth
 **Row-Level Security and API Authorization:**
 - PostgreSQL row-level security policies enforce data access, users can only access projects they own or have permissions for
 - Database-level enforcement prevents API bypass attacks, policy testing in all database queries
-- JWT token validation on all protected endpoints, role-based access control (RBAC) for future admin features
+- JWT token validation on all protected endpoints
 - Resource ownership verification before operations, permission checks before project access
 
 ### Data Protection
