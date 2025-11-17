@@ -49,7 +49,7 @@ export async function permissionRoutes(fastify: FastifyInstance): Promise<void> 
   fastify.post<{ Body: AddPermissionBody }>(
     '/projects/:projectId/permissions',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: AddPermissionBody }, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { projectId: string }).projectId;
       const { email } = request.body;

@@ -180,7 +180,7 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put<{ Body: UpdateInstanceBody }>(
     '/projects/:projectId/databases/:databaseId/instances/:instanceId',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateInstanceBody }, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { projectId: string }).projectId;
       const databaseId = (request.params as { databaseId: string }).databaseId;
