@@ -311,33 +311,65 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       // Verify Database tab is active
       await expect(page.locator('button.tab-button.active:has-text("Database")')).toBeVisible();
       
-      // Verify "default database" is visible
-      await expect(page.locator('text=default database')).toBeVisible();
+      // Verify "default database" is visible in the database type list (button)
+      await expect(page.locator('button.database-type-item:has-text("default database")')).toBeVisible();
+      
+      // Wait for instance creation API response
+      const createInstanceResponsePromise = page.waitForResponse(response => 
+        response.url().includes('/instances') && response.request().method() === 'POST'
+      );
       
       // Click "Create instance" button
       await page.click('button:has-text("Create instance")');
-      await page.waitForTimeout(1000);
+      await createInstanceResponsePromise;
       
-      // Find and fill first instance value
-      const instanceInputs = page.locator('input[type="text"]').filter({ hasNotText: SECONDARY_USER_EMAIL });
-      const firstInput = instanceInputs.first();
-      await firstInput.fill(FIRST_INSTANCE_VALUE);
-      await firstInput.blur();
+      // Wait for editor data refresh
+      await page.waitForResponse(response => 
+        response.url().includes('/projects/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
       await page.waitForTimeout(500);
       
-      // Create second instance
-      await page.click('button:has-text("Create instance")');
+      // Find and fill first instance value (filter out email input from permissions tab)
+      const instanceInputs = page.locator('.database-tab input[type="text"].property-input');
+      const firstInput = instanceInputs.first();
+      await expect(firstInput).toBeVisible({ timeout: 5000 });
+      await firstInput.fill(FIRST_INSTANCE_VALUE);
+      await firstInput.blur();
+      
+      // Wait for debounced update (debounce is 500ms, wait a bit longer)
       await page.waitForTimeout(1000);
+      
+      // Create second instance
+      const createSecondInstanceResponsePromise = page.waitForResponse(response => 
+        response.url().includes('/instances') && response.request().method() === 'POST'
+      );
+      await page.click('button:has-text("Create instance")');
+      await createSecondInstanceResponsePromise;
+      
+      // Wait for editor data refresh
+      await page.waitForResponse(response => 
+        response.url().includes('/projects/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
+      await page.waitForTimeout(500);
       
       // Fill second instance value
       const secondInput = instanceInputs.nth(1);
+      await expect(secondInput).toBeVisible({ timeout: 5000 });
       await secondInput.fill(SECOND_INSTANCE_VALUE);
       await secondInput.blur();
-      await page.waitForTimeout(500);
       
-      // Verify both instances exist
-      await expect(page.locator(`text=${FIRST_INSTANCE_VALUE}`)).toBeVisible();
-      await expect(page.locator(`text=${SECOND_INSTANCE_VALUE}`)).toBeVisible();
+      // Wait for debounced update (debounce is 500ms, wait a bit longer)
+      await page.waitForTimeout(1000);
+      
+      // Re-query inputs after data refresh to ensure we have the latest elements
+      const allInstanceInputs = page.locator('.database-tab input[type="text"].property-input');
+      await expect(allInstanceInputs).toHaveCount(2, { timeout: 5000 });
+      
+      // Verify both instances exist by checking input values
+      const firstInputValue = await allInstanceInputs.first().inputValue();
+      const secondInputValue = await allInstanceInputs.nth(1).inputValue();
+      expect(firstInputValue).toBe(FIRST_INSTANCE_VALUE);
+      expect(secondInputValue).toBe(SECOND_INSTANCE_VALUE);
     });
 
     // Step 9: Create Function

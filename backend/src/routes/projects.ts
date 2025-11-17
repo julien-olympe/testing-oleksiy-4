@@ -253,12 +253,75 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
               properties: true,
             },
           },
+          permissions: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
         },
       });
 
       if (!project) {
         throw new NotFoundError('Project');
       }
+
+      // Get default database (system database)
+      const defaultDatabase = await prisma.database.findFirst({
+        where: {
+          name: 'default database',
+          projectId: '00000000-0000-0000-0000-000000000000', // System project ID
+        },
+        include: {
+          properties: true,
+        },
+      });
+
+      // Get instances for project databases
+      const projectDatabasesWithInstances = await Promise.all(
+        project.databases.map(async (db) => {
+          const instances = await prisma.databaseInstance.findMany({
+            where: { databaseId: db.id },
+            include: {
+              values: {
+                include: {
+                  property: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+          return { ...db, instances };
+        })
+      );
+
+      // Get instances for default database (all instances, as default database is shared)
+      const defaultDatabaseWithInstances = defaultDatabase
+        ? {
+            ...defaultDatabase,
+            instances: await prisma.databaseInstance.findMany({
+              where: { databaseId: defaultDatabase.id },
+              include: {
+                values: {
+                  include: {
+                    property: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            }),
+          }
+        : null;
+
+      // Combine default database with project databases
+      const allDatabases = defaultDatabaseWithInstances
+        ? [defaultDatabaseWithInstances, ...projectDatabasesWithInstances]
+        : projectDatabasesWithInstances;
 
       reply.send({
         project: {
@@ -275,7 +338,12 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: f.createdAt.toISOString(),
           updatedAt: f.updatedAt.toISOString(),
         })),
-        databases: project.databases.map((d) => ({
+        permissions: project.permissions.map((p) => ({
+          userId: p.userId,
+          userEmail: p.user.email,
+          createdAt: p.createdAt.toISOString(),
+        })),
+        databases: allDatabases.map((d) => ({
           id: d.id,
           name: d.name,
           projectId: d.projectId,
@@ -285,6 +353,17 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
             name: p.name,
             type: p.type,
             createdAt: p.createdAt.toISOString(),
+          })),
+          instances: (d.instances || []).map((i) => ({
+            id: i.id,
+            databaseId: i.databaseId,
+            values: i.values.map((v) => ({
+              propertyId: v.propertyId,
+              propertyName: v.property.name,
+              value: v.value,
+            })),
+            createdAt: i.createdAt.toISOString(),
+            updatedAt: i.updatedAt.toISOString(),
           })),
         })),
       });
