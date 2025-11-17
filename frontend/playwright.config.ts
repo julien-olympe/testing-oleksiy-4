@@ -1,4 +1,32 @@
 import { defineConfig, devices } from '@playwright/test';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// Load environment variables from .env file
+function loadEnv() {
+  try {
+    const envPath = '/workspace/.env';
+    const envContent = readFileSync(envPath, 'utf-8');
+    const env: Record<string, string> = {};
+    
+    envContent.split('\n').forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, ...valueParts] = trimmed.split('=');
+        if (key && valueParts.length > 0) {
+          env[key.trim()] = valueParts.join('=').trim();
+        }
+      }
+    });
+    
+    return env;
+  } catch (error) {
+    console.warn('Could not load .env file, using process.env:', error);
+    return {};
+  }
+}
+
+const envVars = loadEnv();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -42,6 +70,16 @@ export default defineConfig({
       url: 'http://localhost:3000/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
+      env: {
+        ...process.env,
+        ...envVars,
+        NODE_ENV: 'development',
+        PORT: '3000',
+        JWT_SECRET: envVars.JWT_SECRET || 'test-jwt-secret-key-change-in-production',
+        JWT_REFRESH_SECRET: envVars.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-key-change-in-production',
+        CORS_ORIGIN: '*',
+        LOG_LEVEL: 'info',
+      },
     },
     {
       command: 'npm run dev',

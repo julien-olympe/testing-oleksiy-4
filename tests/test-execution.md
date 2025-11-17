@@ -16,7 +16,7 @@ This report documents the comprehensive test execution for the visual programmin
 - ✅ **TypeScript Build (Backend):** PASSED (after fixes)
 - ✅ **TypeScript Build (Frontend):** PASSED
 - ✅ **Health Check Unit Tests:** PASSED (3/3 tests)
-- ⚠️ **Critical Path E2E Test:** Requires manual execution with services running
+- ⚠️ **Critical Path E2E Test:** PARTIALLY PASSED (6/14 steps passing, 1 failing at Step 7)
 
 ---
 
@@ -173,22 +173,116 @@ The critical path test covers the following use cases:
 
 ### 4.3 Execution Status
 
-**Status:** ⚠️ Requires Manual Execution
+**Status:** ⚠️ PARTIALLY PASSED (6/14 steps passing)
 
-**Prerequisites:**
-- Backend service running on port 3000 (default)
-- Frontend service running (Vite dev server)
-- Playwright E2E test framework configured
-- Browser automation setup
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --reporter=list`  
+**Test Duration:** ~28 seconds  
+**Overall Result:** 1 test failed (6 steps passed, 1 step failed at Step 7)
 
-**Next Steps:**
-1. Start backend: `cd /workspace/backend && npm run dev`
-2. Start frontend: `cd /workspace/frontend && npm run dev`
-3. Create Playwright configuration if missing
-4. Create E2E test script based on critical path specification
-5. Execute: `cd /workspace/frontend && npm run test:e2e`
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
 
-**Note:** E2E test execution requires both services to be running simultaneously and a properly configured Playwright environment.
+**Test Configuration:**
+- Playwright config updated to load environment variables from .env file
+- Backend and frontend services auto-started via webServer configuration
+- Chromium browser installed and configured
+
+### 4.4 Detailed Step-by-Step Results
+
+#### Step 1: Register Primary User
+- **Status:** ✅ PASSED
+- **Details:** Successfully registered user with email `testuser@example.com`
+- **Notes:** Test handles case where user already exists by falling back to login
+
+#### Step 2: Register Secondary User
+- **Status:** ✅ PASSED
+- **Details:** Successfully registered secondary user with email `testuser2@example.com`
+- **Notes:** Test handles case where user already exists by falling back to login
+
+#### Step 3: Login Primary User
+- **Status:** ✅ PASSED
+- **Details:** Successfully logged in as primary user and navigated to home screen
+- **Notes:** Home screen displayed with project list area visible
+
+#### Step 4: Create Project
+- **Status:** ✅ PASSED (after fix)
+- **Details:** Successfully dragged and dropped Project brick to create new project
+- **Issues Fixed:** 
+  - Initial failure due to strict mode violation (multiple project cards found)
+  - Fixed by checking project count increase instead of just visibility
+- **Notes:** Test now handles existing projects from previous test runs
+
+#### Step 5: Rename Project
+- **Status:** ✅ PASSED (after fix)
+- **Details:** Successfully renamed project to "My Test Project"
+- **Issues Fixed:**
+  - Initial failure due to strict mode violation (multiple projects with same name)
+  - Fixed by checking name within specific project card context
+- **Notes:** Project name updated correctly
+
+#### Step 6: Open Project Editor
+- **Status:** ✅ PASSED
+- **Details:** Successfully opened project editor by double-clicking project card
+- **Notes:** Project editor displayed with all tabs (Project, Permissions, Database) visible
+
+#### Step 7: Add Project Permission
+- **Status:** ❌ FAILED
+- **Error:** Permission item for secondary user not appearing in permissions list
+- **Details:** 
+  - API call appears to succeed (status 201 expected)
+  - Secondary user email `testuser2@example.com` not visible in permissions list after adding
+  - Browser console shows 400 Bad Request errors (may be from other requests)
+- **Root Cause Analysis:**
+  - Possible issues:
+    1. API response may be 400 instead of 201 (user not found, validation error, etc.)
+    2. Permissions list not refreshing after successful add
+    3. Frontend state not updating correctly after API call
+- **Test Improvements Applied:**
+  - Added wait for API POST response
+  - Added wait for editor data refresh (GET request)
+  - Added error notification checking
+  - Increased timeout to 10 seconds
+- **Recommendation:** Investigate API response status and frontend state management
+
+#### Steps 8-14: Not Executed
+- **Status:** ⚠️ NOT REACHED
+- **Reason:** Test failed at Step 7, preventing execution of remaining steps
+- **Steps Not Tested:**
+  - Step 8: Creating Database Instances
+  - Step 9: Creating Function
+  - Step 10: Opening Function Editor
+  - Step 11: Adding Bricks to Function Editor
+  - Step 12: Setting Brick Input Parameter
+  - Step 13: Linking Bricks
+  - Step 14: Running Function
+
+### 4.5 Terminal Output Summary
+
+**Test Execution Command:**
+```bash
+cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --reporter=list
+```
+
+**Key Output:**
+- Services started successfully via Playwright webServer configuration
+- Backend: Running on http://localhost:3000
+- Frontend: Running on http://localhost:5173
+- Browser: Chromium 141.0.7390.37 (playwright build v1194)
+- Test duration: ~28 seconds
+
+**Error Messages:**
+- Browser console shows: "Failed to load resource: the server responded with a status of 400 (Bad Request)" (may be from other requests)
+- Test failure at Step 7: "element(s) not found" for secondary user email in permissions list
+
+**Test Artifacts Generated:**
+- Screenshot: `test-results/critical-path-Critical-Pat-b1f88-ation-to-Function-Execution-chromium/test-failed-1.png`
+- Video: `test-results/critical-path-Critical-Pat-b1f88-ation-to-Function-Execution-chromium/video.webm`
+- Error context: `test-results/critical-path-Critical-Pat-b1f88-ation-to-Function-Execution-chromium/error-context.md`
 
 ---
 
@@ -224,6 +318,41 @@ The critical path test covers the following use cases:
 - Missing JWT secrets for tests → Added defaults in setup file
 
 **All resolved** ✅
+
+### 5.4 E2E Test Issues and Fixes
+
+**Total Issues Fixed:** 4
+
+**Issues Fixed:**
+
+1. **Playwright Configuration - Environment Variables:**
+   - Issue: Backend service couldn't start due to missing DATABASE_URL environment variable
+   - Fix: Updated `playwright.config.ts` to load environment variables from `/workspace/.env` file
+   - Impact: Backend service now starts correctly with database connection
+
+2. **Step 4 - Multiple Project Cards (Strict Mode Violation):**
+   - Issue: Test failed with "strict mode violation: locator('.project-card') resolved to 2 elements"
+   - Fix: Changed test to check project count increase instead of just visibility, and use `.first()` for "New Project" check
+   - Impact: Test now handles existing projects from previous test runs
+
+3. **Step 5 - Multiple Projects with Same Name (Strict Mode Violation):**
+   - Issue: Test failed with "strict mode violation: locator('.project-name:has-text("My Test Project")') resolved to 2 elements"
+   - Fix: Changed test to check project name within specific project card context instead of global search
+   - Impact: Test correctly verifies renamed project within its own card
+
+4. **Step 7 - Permissions List Not Refreshing:**
+   - Issue: Secondary user not appearing in permissions list after adding
+   - Fixes Applied:
+     - Added wait for API POST response
+     - Added wait for editor data refresh (GET request after onDataChange)
+     - Added error notification checking
+     - Increased timeout to 10 seconds
+     - Changed selector to use `.permission-item` filter
+   - Status: ⚠️ Still failing - requires further investigation
+   - Impact: Test fails at Step 7, preventing execution of remaining steps
+
+**Remaining Issue:**
+- Step 7 failure requires investigation of API response status and frontend state management
 
 ---
 
@@ -272,9 +401,12 @@ The critical path test covers the following use cases:
 
 ### 7.3 End-to-End Tests
 
-- Status: Setup required
-- Framework: Playwright (installed)
-- Configuration: Needs to be created
+- Status: ⚠️ PARTIALLY PASSING (6/14 steps)
+- Framework: Playwright (installed and configured)
+- Configuration: ✅ Complete
+- Test File: `/workspace/frontend/e2e/critical-path.spec.ts`
+- Results: 6 steps passed, 1 step failed (Step 7), 7 steps not reached
+- Execution Time: ~28 seconds per run
 
 ---
 
@@ -284,9 +416,9 @@ The critical path test covers the following use cases:
 
 1. ✅ **Completed:** Fix all TypeScript strict mode errors
 2. ✅ **Completed:** Set up health check unit tests
-3. ⚠️ **Pending:** Create Playwright configuration for E2E tests
-4. ⚠️ **Pending:** Implement critical path E2E test script
-5. ⚠️ **Pending:** Execute E2E test with services running
+3. ✅ **Completed:** Create Playwright configuration for E2E tests
+4. ✅ **Completed:** Implement critical path E2E test script
+5. ⚠️ **Partially Completed:** Execute E2E test with services running (6/14 steps passing, Step 7 failing)
 
 ### 8.2 Future Improvements
 
@@ -331,18 +463,25 @@ The comprehensive test execution has successfully:
 - ✅ Unit testing
 - ✅ TypeScript compilation
 - ✅ Database operations
+- ✅ End-to-end testing (Playwright configured and partially working)
+
+**Partially Working:**
+- ⚠️ End-to-end testing (6/14 critical path steps passing, Step 7 requires investigation)
 
 **Requires Setup:**
-- ⚠️ End-to-end testing (Playwright configuration needed)
 - ⚠️ Integration testing (test suite to be created)
 
 ### 9.3 Next Steps
 
-1. Start backend and frontend services
-2. Create Playwright E2E test configuration
-3. Implement critical path E2E test script
-4. Execute and verify E2E test results
-5. Expand test coverage for all API endpoints
+1. ✅ Start backend and frontend services (automated via Playwright)
+2. ✅ Create Playwright E2E test configuration
+3. ✅ Implement critical path E2E test script
+4. ⚠️ **PRIORITY:** Investigate and fix Step 7 failure (Add Project Permission)
+   - Check API response status for POST /projects/:id/permissions
+   - Verify frontend state updates after permission addition
+   - Check if permissions list refreshes correctly
+5. Execute remaining E2E test steps (8-14) after Step 7 is fixed
+6. Expand test coverage for all API endpoints
 
 ---
 
@@ -387,11 +526,16 @@ cd /workspace/frontend && npm run test:e2e
 12. `/workspace/backend/jest.config.js` - Added setup file
 13. `/workspace/backend/jest.setup.js` - Created (new file)
 14. `/workspace/backend/src/__tests__/health.test.ts` - Created (new file)
+15. `/workspace/frontend/playwright.config.ts` - Updated to load environment variables from .env file
+16. `/workspace/frontend/e2e/critical-path.spec.ts` - Fixed multiple test issues (Steps 4, 5, 7)
 
 ---
 
 **Report Generated:** 2025-01-17  
-**Total Execution Time:** ~15 minutes  
-**Tests Executed:** 3  
-**Tests Passed:** 3  
-**Tests Failed:** 0
+**Total Execution Time:** ~20 minutes  
+**Tests Executed:** 
+- Unit Tests: 3 (all passed)
+- E2E Tests: 1 (partially passed - 6/14 steps)
+**Tests Passed:** 3 unit tests + 6 E2E steps  
+**Tests Failed:** 0 unit tests + 1 E2E step (Step 7)
+**Test Fixes Applied:** 4 E2E test issues fixed

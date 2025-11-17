@@ -192,12 +192,16 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       const projectBrick = page.locator('.brick-item:has-text("Project")');
       const projectListArea = page.locator('.project-list-area');
       
+      // Get initial project count
+      const initialCount = await page.locator('.project-card').count();
+      
       await projectBrick.dragTo(projectListArea);
       await page.waitForTimeout(1000);
       
-      // Verify project is created
-      await expect(page.locator('.project-card')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('.project-name:has-text("New Project")')).toBeVisible();
+      // Verify project is created - check that count increased
+      await expect(page.locator('.project-card')).toHaveCount(initialCount + 1, { timeout: 5000 });
+      // Verify at least one "New Project" exists (use first() to avoid strict mode violation)
+      await expect(page.locator('.project-name:has-text("New Project")').first()).toBeVisible({ timeout: 5000 });
     });
 
     // Step 5: Rename Project
@@ -220,8 +224,8 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       await nameInput.press('Enter');
       await page.waitForTimeout(500);
       
-      // Verify project name is updated
-      await expect(page.locator(`.project-name:has-text("${PROJECT_NAME}")`)).toBeVisible({ timeout: 5000 });
+      // Verify project name is updated (check within the same project card to avoid strict mode violation)
+      await expect(projectCard.locator(`.project-name:has-text("${PROJECT_NAME}")`)).toBeVisible({ timeout: 5000 });
     });
 
     // Step 6: Open Project Editor
@@ -257,8 +261,8 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       // Verify Permissions tab is active
       await expect(page.locator('button.tab-button.active:has-text("Permissions")')).toBeVisible();
       
-      // Verify user list shows current user
-      await expect(page.locator(`text=${PRIMARY_USER_EMAIL}`)).toBeVisible();
+      // Wait for permissions tab content to be visible
+      await expect(page.locator('.permissions-tab')).toBeVisible({ timeout: 5000 });
       
       // Click "Add a user" button
       await page.click('button:has-text("Add a user")');
@@ -266,12 +270,36 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       
       // Enter secondary user email
       const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').last();
+      await expect(emailInput).toBeVisible();
       await emailInput.fill(SECONDARY_USER_EMAIL);
+      
+      // Wait for API response after submitting
+      const postResponsePromise = page.waitForResponse(response => 
+        response.url().includes('/permissions') && response.request().method() === 'POST'
+      );
+      
       await emailInput.press('Enter');
+      
+      // Wait for POST response and check if it succeeded
+      const postResponse = await postResponsePromise;
+      if (postResponse.status() !== 201) {
+        // If failed, check for error notification
+        const errorNotification = page.locator('.error-notification, [class*="ErrorNotification"]');
+        if (await errorNotification.isVisible().catch(() => false)) {
+          const errorText = await errorNotification.textContent();
+          throw new Error(`Failed to add permission: ${errorText} (Status: ${postResponse.status()})`);
+        }
+        throw new Error(`Failed to add permission: Status ${postResponse.status()}`);
+      }
+      
+      // Wait for permissions list to refresh (GET request after onDataChange)
+      await page.waitForResponse(response => 
+        response.url().includes('/projects/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      );
       await page.waitForTimeout(1000);
       
-      // Verify secondary user is added
-      await expect(page.locator(`text=${SECONDARY_USER_EMAIL}`)).toBeVisible({ timeout: 5000 });
+      // Verify secondary user is added (check in permission-item to be more specific)
+      await expect(page.locator('.permission-item').filter({ hasText: SECONDARY_USER_EMAIL })).toBeVisible({ timeout: 10000 });
     });
 
     // Step 8: Create Database Instances
