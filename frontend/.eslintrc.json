@@ -3,22 +3,33 @@
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    },
     "project": "./tsconfig.json"
   },
   "extends": [
-    "airbnb-base",
-    "airbnb-typescript/base",
+    "airbnb",
+    "airbnb-typescript",
+    "airbnb/hooks",
     "prettier"
   ],
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "react", "react-hooks"],
   "env": {
-    "node": true,
+    "browser": true,
     "es2020": true
   },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
   "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
     "import/prefer-default-export": "off",
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
   },
-  "ignorePatterns": ["dist", "node_modules", "*.js"]
+  "ignorePatterns": ["dist", "node_modules", "*.js", "vite.config.ts"]
 }
