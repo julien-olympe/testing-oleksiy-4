@@ -66,6 +66,16 @@ This document defines the complete data structure for the visual programming app
 - One-to-many with DatabaseProperty (database_id): A database has one or more properties
 - One-to-many with DatabaseInstance (database_id): A database has zero or more instances
 
+## System Initialization
+
+**Default Database:**
+- The system initializes with a default Database entity named "default database"
+- The default database has one DatabaseProperty with name "string" and type "string"
+- The default database is available to all projects and all users
+- The default database uses a reserved system project_id (special UUID reserved for system entities) to maintain referential integrity
+- All users can access and use the default database in their functions regardless of project ownership
+- The default database appears in the Database tab for all projects
+
 ### DatabaseProperty
 
 **Purpose and Essence:** Represents a field definition within a database type. Defines the structure and type constraints for instance values.

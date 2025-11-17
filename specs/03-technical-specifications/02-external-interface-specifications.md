@@ -135,7 +135,6 @@ This document defines all external interfaces required for the visual programmin
 **Interface Structure:**
 - Single-page application with client-side routing
 - No full page reloads after initial load
-- Real-time updates via WebSocket for collaborative features (future)
 
 **Menu Structure:**
 - Top-right: User settings icon (round button)

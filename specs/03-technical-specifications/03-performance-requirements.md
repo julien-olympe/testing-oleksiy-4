@@ -10,7 +10,6 @@ This document defines the performance requirements and constraints for the visua
 
 **Maximum Concurrent Users:**
 - 1000 simultaneous authenticated users
-- Each user maintains one active WebSocket connection (if implemented)
 - Session management handles user state efficiently
 
 **User Load Distribution:**
@@ -128,7 +127,6 @@ This document defines the performance requirements and constraints for the visua
 
 **Consistency Model:**
 - Strong consistency for all write operations
-- Eventual consistency acceptable for read replicas (if implemented)
 - Immediate consistency required for user's own data
 
 **Conflict Handling:**
