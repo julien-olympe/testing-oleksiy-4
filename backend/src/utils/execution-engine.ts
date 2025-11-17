@@ -323,7 +323,7 @@ export class ExecutionEngine {
       brickId: brick.id,
       brickType: 'GetFirstInstance',
       output: {
-        instance: list[0],
+        DB: list[0], // Frontend expects output name 'DB'
       },
     });
   }
@@ -335,13 +335,13 @@ export class ExecutionEngine {
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
-    // Find input connection
-    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Instance');
+    // Find input connection (frontend uses 'Object' as input name)
+    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Object' || c.toInputName === 'Instance');
     if (!inputConnection) {
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
-        missingInputs: ['Instance'],
+        missingInputs: ['Object'],
       });
     }
 
