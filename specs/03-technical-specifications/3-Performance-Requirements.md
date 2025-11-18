@@ -1,5 +1,9 @@
 # Performance Requirements
 
+## Maximum Number of Terminals
+
+- Maximum number of terminals: N/A - This is a web application accessed through web browsers. There is no concept of physical terminals. The system supports concurrent browser sessions as specified in the Concurrent Users section (1000 concurrent users).
+
 ## User Capacity
 
 ### Concurrent Users
