@@ -139,7 +139,6 @@
 **API Versioning:**
 - API versioning is not required in initial implementation
 - All endpoints use `/api/` prefix
-- Future versioning strategy: `/api/v1/`, `/api/v2/` if needed
 
 ### Frontend Architecture
 

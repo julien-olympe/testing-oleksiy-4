@@ -31,7 +31,7 @@
 
 ### Bricks per Function
 - Maximum number of bricks per function: 100 bricks
-- Includes all brick types (ListInstancesByDBName, GetFirstInstance, LogInstanceProps, and future brick types)
+- Includes all brick types (ListInstancesByDBName, GetFirstInstance, LogInstanceProps)
 - Brick connection graph must validate within 1 second for functions with maximum brick count
 
 ### Database Instances per Database
