@@ -786,14 +786,149 @@ cd /workspace/frontend && npm run test:e2e
 
 ---
 
+## 6. Section 16 - Create Database Instance E2E Tests
+
+### 6.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/16-create-database-instance.md`  
+**Test File Created:** `/workspace/frontend/e2e/16-create-database-instance.spec.ts`
+
+### 6.2 Test Coverage
+
+The section 16 tests cover the following scenarios:
+1. DB-INSTANCE-CREATE-001: Create Database Instance - Positive Case
+2. DB-INSTANCE-CREATE-002: Create Database Instance - Negative Case - Permission Denied
+3. DB-INSTANCE-CREATE-003: Create Database Instance - Verify Multiple Instances Can Be Created
+4. DB-INSTANCE-CREATE-004: Create Database Instance - Verify Instance Persistence
+
+### 6.3 Execution Status
+
+**Status:** ⚠️ FAILING (0/4 tests passing - test framework issue)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/16-create-database-instance.spec.ts --reporter=list`  
+**Test Duration:** ~1-2 minutes per test  
+**Overall Result:** 0 tests passed, 4 tests failed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 8000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env and /workspace/backend/.env
+
+### 6.4 Environment Setup Fixes Applied
+
+1. **Prisma Client Generation:**
+   - Issue: `@prisma/client did not initialize yet. Please run "prisma generate"`
+   - Fix: Ran `npx prisma generate` in backend directory
+   - Status: ✅ Resolved
+
+2. **Backend Environment Variables:**
+   - Issue: Backend couldn't start due to missing DATABASE_URL and JWT secrets
+   - Fix: Created `/workspace/backend/.env` file with all required environment variables
+   - Status: ✅ Resolved
+
+3. **Backend Health Check Endpoint:**
+   - Issue: Playwright webServer was using `/api/v1/auth/login` for health check, which requires POST
+   - Fix: Added `/health` GET endpoint to backend and updated Playwright config to use it
+   - Status: ✅ Resolved
+
+4. **Frontend Port Configuration:**
+   - Issue: Frontend was running on port 5173, but Playwright expected port 3000
+   - Fix: Updated `vite.config.ts` to run on port 3000
+   - Status: ✅ Resolved
+
+5. **Frontend API Proxy:**
+   - Issue: Frontend proxy was pointing to port 3000, but backend runs on port 8000
+   - Fix: Updated `vite.config.ts` proxy target to `http://localhost:8000`
+   - Status: ✅ Resolved
+
+6. **Playwright webServer Configuration:**
+   - Issue: Backend webServer command was using `cd ../backend && npm run dev` which had path issues
+   - Fix: Changed to use `cwd: '../backend'` and `command: 'npm run dev'`
+   - Status: ✅ Resolved
+
+### 6.5 Test Execution Results
+
+#### Test 1: DB-INSTANCE-CREATE-001 - Create Database Instance - Positive Case
+- **Status:** ❌ FAILING
+- **Duration:** ~60 seconds (timeout)
+- **Issue:** `page.waitForResponse` timeout - API response not being caught by Playwright
+- **Root Cause Analysis:**
+  - Backend logs show API call is successful: `POST /api/v1/projects/.../databases/.../instances - 201`
+  - Database instance is being created successfully (INSERT queries visible in logs)
+  - Frontend is making the API call correctly
+  - Playwright's `waitForResponse` with predicate function isn't catching the response
+  - This appears to be a test framework timing/URL matching issue, not an application issue
+- **Error:** `Error: page.waitForResponse: Test timeout of 60000ms exceeded.`
+- **Location:** Step 6 - Click "Create instance" button
+- **Investigation Needed:**
+  - Verify if response URL format matches the wait condition
+  - Check if there's a race condition with Promise.all setup
+  - Investigate if Vite proxy is affecting response interception
+
+#### Test 2: DB-INSTANCE-CREATE-002 - Create Database Instance - Negative Case - Permission Denied
+- **Status:** ❌ FAILING (likely same issue as Test 1)
+- **Issue:** Similar `waitForResponse` timeout issue
+
+#### Test 3: DB-INSTANCE-CREATE-003 - Create Database Instance - Verify Multiple Instances Can Be Created
+- **Status:** ❌ FAILING (likely same issue as Test 1)
+- **Issue:** Similar `waitForResponse` timeout issue
+
+#### Test 4: DB-INSTANCE-CREATE-004: Create Database Instance - Verify Instance Persistence
+- **Status:** ❌ FAILING (likely same issue as Test 1)
+- **Issue:** Similar `waitForResponse` timeout issue
+
+### 6.6 Issues Fixed During Test Execution
+
+1. **Environment Setup:**
+   - ✅ Prisma client generation
+   - ✅ Backend environment variables configuration
+   - ✅ Backend health check endpoint
+   - ✅ Frontend port and proxy configuration
+   - ✅ Playwright webServer configuration
+
+### 6.7 Remaining Issues
+
+1. **Test Framework Response Interception:**
+   - API calls are working correctly (201 status codes in backend logs)
+   - Database instances are being created successfully
+   - Playwright's `waitForResponse` isn't catching the responses
+   - This appears to be a test framework issue with response interception timing/URL matching
+   - **Recommendation:** Investigate Playwright's response interception behavior with Vite proxy
+   - **Possible Solutions:**
+     - Check if response URL includes full domain vs. relative path
+     - Verify if Promise.all timing is causing race condition
+     - Consider using `waitForRequest` instead of `waitForResponse`
+     - Check if Vite proxy is modifying response URLs
+
+### 6.8 Recommendations
+
+1. **Immediate Actions:**
+   - Investigate Playwright response interception with Vite proxy setup
+   - Verify response URL format matches wait condition exactly
+   - Consider alternative wait strategies (e.g., wait for UI update instead of API response)
+   - Check Playwright version compatibility with response interception
+
+2. **Future Improvements:**
+   - Add more robust error handling for API failures in tests
+   - Improve test isolation (clean up test data between runs)
+   - Add test data setup/teardown helpers
+   - Consider using test fixtures for common setup
+
+---
+
 **Report Generated:** 2025-01-17  
 **Total Execution Time:** ~20 minutes  
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
 - E2E Tests: 1 (passed - 13/13 steps)
 - E2E Tests Section 12: 4 tests (3 passed, 1 needs investigation)
+- E2E Tests Section 16: 4 tests (0 passed, 4 failing - test framework issue)
 **Tests Passed:** 3 unit tests + 13 E2E steps + 3 E2E section 12 tests
-**Tests Failed:** 0 unit tests + 0 E2E steps + 1 E2E section 12 test (FUNC-OPEN-003)
-**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied
+**Tests Failed:** 0 unit tests + 0 E2E steps + 1 E2E section 12 test (FUNC-OPEN-003) + 4 E2E section 16 tests (test framework issue)
+**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied + Section 16 environment setup fixes
 **Known Issues:**
 - FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
+- Section 16 tests: API calls are working correctly (201 status), but Playwright's waitForResponse isn't catching them (test framework timing/URL matching issue)

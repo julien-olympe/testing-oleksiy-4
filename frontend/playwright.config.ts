@@ -36,11 +36,12 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: 'cd ../backend && npm run dev',
-      url: 'http://localhost:8000/api/v1/auth/login',
+      command: 'npm run dev',
+      cwd: '../backend',
+      url: 'http://localhost:8000/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
-      stdout: 'ignore',
+      stdout: 'pipe',
       stderr: 'pipe',
       env: {
         NODE_ENV: 'development',
