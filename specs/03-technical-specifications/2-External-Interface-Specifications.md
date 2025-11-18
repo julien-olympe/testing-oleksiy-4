@@ -150,7 +150,7 @@ No specific hardware peripherals are required. The application operates entirely
 - Examples: "Email is required", "Password must be at least 8 characters", "Database name cannot be empty"
 
 **Function Execution Errors:**
-- Display: Console output (browser console) and optional toast notification
+- Display: Console output (browser console) only
 - Format: Error message with brick type and connection details
 - Example: "Error in 'List instances by DB name': Database 'default database' not found"
 
