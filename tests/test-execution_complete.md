@@ -802,3 +802,111 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 10. Section 08 - Open Project Editor E2E Tests
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/08-open-project-editor.md`  
+**Test IDs:** PROJ-OPEN-001, PROJ-OPEN-002, PROJ-OPEN-003, PROJ-OPEN-004
+
+### 10.2 Test Coverage
+
+The open project editor tests cover:
+1. PROJ-OPEN-001: Open Project Editor - Positive Case
+2. PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+3. PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+4. PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+
+### 10.3 Execution Status
+
+**Status:** ⚠️ PARTIALLY PASSING (3/4 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/08-open-project-editor.spec.ts --reporter=list`  
+**Test Duration:** ~50 seconds  
+**Overall Result:** 3 tests passed, 1 test failed
+
+**Test File Created:** `/workspace/frontend/e2e/08-open-project-editor.spec.ts`
+
+### 10.4 Detailed Test Results
+
+#### PROJ-OPEN-001: Open Project Editor - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~9 seconds
+- **Details:** Successfully verified all positive case scenarios:
+  - User login and navigation
+  - Project editor opening via double-click
+  - Settings icon visibility
+  - Tab visibility (Project, Permissions, Database)
+  - Project tab active by default
+  - Left side panel with brick list
+  - Function brick visibility
+  - Function list area visibility
+  - No error messages
+
+#### PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Duration:** ~6 seconds
+- **Details:** Successfully verified permission restrictions:
+  - Unauthorized user cannot see private project
+  - Project not displayed in project list
+  - Access denial properly enforced
+  - User remains on Home Screen
+
+#### PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+- **Status:** ❌ FAILED
+- **Duration:** ~30 seconds (timeout)
+- **Issue:** Function "TestFunction" not found in function list after setup
+- **Root Cause:** Function rename in test setup or test step not completing reliably
+- **Attempted Fixes:**
+  1. Added waits for editor to load before checking
+  2. Added function creation/rename logic in test step as fallback
+  3. Added waitForFunction to wait for function name to appear
+  4. Added verification after rename
+- **Status:** Requires further investigation - function rename API call or UI update timing issue
+
+#### PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+- **Status:** ✅ PASSED
+- **Duration:** ~7 seconds
+- **Details:** Successfully verified tab navigation:
+  - All tabs clickable and functional
+  - Tab switching works correctly
+  - Brick list visibility toggles correctly (hidden in Permissions/Database, visible in Project)
+  - Content area updates correctly for each tab
+
+### 10.5 Issues Found and Fixes Applied
+
+**Total Issues Fixed:** 3
+
+1. **PROJ-OPEN-001 - Editor Loading Timing:**
+   - Issue: Tabs not visible immediately after editor opens
+   - Fix: Added wait for loading spinner to disappear and additional timeout
+   - Status: ✅ Fixed
+
+2. **PROJ-OPEN-002 - Project Rename Input Field:**
+   - Issue: Input field not appearing after clicking rename button
+   - Fix: Added explicit wait for input field to appear using `waitFor` with visible state
+   - Status: ✅ Fixed
+
+3. **PROJ-OPEN-004 - Strict Mode Violation:**
+   - Issue: Database interface selector matched multiple elements
+   - Fix: Changed to check elements separately using `.first()`
+   - Status: ✅ Fixed
+
+**Remaining Issue:**
+- PROJ-OPEN-003: Function rename verification failing - requires investigation of API response timing or UI update mechanism
+
+### 10.6 Recommendations
+
+1. **Immediate Actions:**
+   - ✅ Completed: Created test file for section 08
+   - ✅ Completed: Fixed 3 out of 4 test failures
+   - ⚠️ Pending: Investigate and fix PROJ-OPEN-003 function rename issue
+
+2. **Future Improvements:**
+   - Add API response interception to verify function rename completes
+   - Consider using Playwright's network request waiting instead of timeouts
+   - Add retry logic for flaky function rename operations
