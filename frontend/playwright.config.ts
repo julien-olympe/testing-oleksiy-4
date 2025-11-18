@@ -18,27 +18,27 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: [
-    {
-      command: 'cd ../backend && npm run dev',
-      port: 8000,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-      env: {
-        ...process.env,
-        PORT: '8000',
-        NODE_ENV: 'test',
-        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://tu_phmhhk:qM4y8EBHYxGxRX4SEqd6K8CsQMR7jL7HMxJC6tEB@37.156.46.78:43971/test_db_vk11wc',
-        JWT_SECRET: process.env.JWT_SECRET || 'test-jwt-secret-key-for-development-only-change-in-production',
-        JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-key-for-development-only-change-in-production',
-        CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
-      },
-    },
-    {
-      command: 'npm run dev',
-      port: 3000,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-    },
-  ],
+  // webServer: [
+  //   {
+  //     command: 'cd ../backend && npm run dev',
+  //     url: 'http://localhost:8000/api/v1/auth/login',
+  //     reuseExistingServer: true,
+  //     timeout: 120 * 1000,
+  //     env: {
+  //       ...process.env,
+  //       PORT: '8000',
+  //       NODE_ENV: 'test',
+  //       DATABASE_URL: process.env.DATABASE_URL || 'postgresql://tu_phmhhk:qM4y8EBHYxGxRX4SEqd6K8CsQMR7jL7HMxJC6tEB@37.156.46.78:43971/test_db_vk11wc',
+  //       JWT_SECRET: process.env.JWT_SECRET || 'test-jwt-secret-key-for-development-only-change-in-production',
+  //       JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-key-for-development-only-change-in-production',
+  //       CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  //     },
+  //   },
+  //   {
+  //     command: 'npm run dev',
+  //     port: 3000,
+  //     reuseExistingServer: true,
+  //     timeout: 120 * 1000,
+  //   },
+  // ],
 });
