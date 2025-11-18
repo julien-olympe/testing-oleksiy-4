@@ -797,3 +797,132 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied
 **Known Issues:**
 - FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
+
+---
+
+## 6. Section 11 - Delete Function E2E Tests
+
+### 6.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/11-delete-function.md`  
+**Test File Created:** `/workspace/frontend/e2e/11-delete-function.spec.ts`
+
+### 6.2 Test Coverage
+
+The section 11 tests cover the following scenarios:
+1. FUNC-DELETE-001: Delete Function - Positive Case
+2. FUNC-DELETE-002: Delete Function - Negative Case - Permission Denied
+3. FUNC-DELETE-003: Delete Function - Cancel Deletion
+4. FUNC-DELETE-004: Delete Function - Verify Cascading Deletion
+
+### 6.3 Execution Status
+
+**Status:** ⚠️ BLOCKED - Prisma Client Initialization Issue
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/11-delete-function.spec.ts --reporter=list`  
+**Overall Result:** Tests not executed due to blocking issue
+
+**Environment Setup:**
+- ✅ Test file created: `/workspace/frontend/e2e/11-delete-function.spec.ts`
+- ✅ Frontend dependencies installed (with --legacy-peer-deps)
+- ✅ Backend dependencies installed (with --legacy-peer-deps)
+- ✅ Playwright Chromium browser installed
+- ✅ Configuration files updated:
+  - Updated `vite.config.ts` to proxy `/api` to `http://localhost:8000` (backend)
+  - Updated `playwright.config.ts` to use port 5173 for frontend
+  - Updated `playwright.config.ts` CORS_ORIGIN to `http://localhost:5173`
+- ❌ **BLOCKING ISSUE:** Prisma client not initialized - cannot download binary engine files
+
+### 6.4 Blocking Issue Details
+
+**Issue:** Prisma Client Binary Engine Download Failure
+
+**Error Message:**
+```
+Error: Failed to fetch sha256 checksum at https://binaries.prisma.sh/all_commits/605197351a3c8bdd595af2d2a9bc3025bca48ea2/debian-openssl-3.0.x/libquery_engine.so.node.sha256 - 500 Internal Server Error
+```
+
+**Root Cause:**
+- Prisma client requires platform-specific binary engine files to be downloaded during `prisma generate`
+- Network connectivity to `https://binaries.prisma.sh` is failing (500 Internal Server Error)
+- Backend server cannot start because Prisma client throws: `@prisma/client did not initialize yet. Please run "prisma generate"`
+
+**Attempted Fixes:**
+1. ✅ Installed frontend dependencies with `npm install --legacy-peer-deps`
+2. ✅ Installed backend dependencies with `npm install --legacy-peer-deps`
+3. ✅ Installed Playwright Chromium browser
+4. ✅ Updated Vite config to proxy to correct backend port (8000)
+5. ✅ Updated Playwright config to use correct frontend port (5173)
+6. ✅ Copied `.env` file to backend directory
+7. ❌ Tried `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1` - still fails on binary download
+8. ❌ Tried `npx prisma generate` - network error persists
+
+**Impact:**
+- Backend server cannot start (required for E2E tests)
+- All 4 test scenarios in section 11 cannot be executed
+- Tests are blocked until Prisma client can be properly initialized
+
+### 6.5 Test File Implementation
+
+**Test File:** `/workspace/frontend/e2e/11-delete-function.spec.ts`
+
+**Implementation Details:**
+- ✅ All 4 test scenarios implemented according to specifications
+- ✅ Helper functions created:
+  - `ensureUserExists()` - Register/login user
+  - `createProject()` - Create project with name
+  - `openProjectEditor()` - Navigate to project editor and ensure Project tab is active
+  - `createFunction()` - Create function with name
+  - `addBrickToFunction()` - Add brick to function editor canvas
+- ✅ Test FUNC-DELETE-001: Implements positive delete flow with confirmation dialog handling
+- ✅ Test FUNC-DELETE-002: Implements permission denied scenario
+- ✅ Test FUNC-DELETE-003: Implements cancel deletion scenario
+- ✅ Test FUNC-DELETE-004: Implements cascading deletion verification
+
+**Test Implementation Quality:**
+- Follows same patterns as section 12 tests
+- Includes proper error handling and waiting for API responses
+- Handles confirmation dialogs using Playwright's dialog API
+- Verifies function deletion from UI and system
+- Includes proper cleanup and verification steps
+
+### 6.6 Recommendations
+
+**Immediate Actions Required:**
+1. **Resolve Prisma Client Issue:**
+   - Check network connectivity to `https://binaries.prisma.sh`
+   - Try alternative Prisma binary download methods
+   - Consider using cached Prisma binaries if available
+   - May need to run `prisma generate` in an environment with network access
+
+2. **Once Prisma Issue Resolved:**
+   - Execute all 4 test scenarios
+   - Verify each test passes according to specifications
+   - Fix any implementation issues found during execution
+   - Update this report with detailed test results
+
+**Future Improvements:**
+- Consider pre-generating Prisma client in CI/CD pipeline
+- Cache Prisma binaries to avoid download issues
+- Add retry logic for Prisma binary downloads
+- Document Prisma setup requirements in README
+
+### 6.7 Configuration Changes Made
+
+**Files Modified:**
+1. `/workspace/frontend/vite.config.ts`
+   - Updated API proxy target from `http://localhost:3000` to `http://localhost:8000`
+
+2. `/workspace/frontend/playwright.config.ts`
+   - Updated `baseURL` from `http://localhost:3000` to `http://localhost:5173`
+   - Updated `CORS_ORIGIN` from `http://localhost:3000` to `http://localhost:5173`
+   - Updated frontend webServer URL from `http://localhost:3000` to `http://localhost:5173`
+
+3. `/workspace/backend/.env`
+   - Created (copied from `/workspace/.env`) to ensure backend can find DATABASE_URL
+
+**Files Created:**
+1. `/workspace/frontend/e2e/11-delete-function.spec.ts` - Complete test implementation for all 4 scenarios
+
+---
