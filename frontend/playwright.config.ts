@@ -21,11 +21,18 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd ../backend && npm run dev',
+<<<<<<< HEAD
       port: 8000,
       reuseExistingServer: true,
       timeout: 180 * 1000,
+=======
+      url: 'http://localhost:8000/health',
+      reuseExistingServer: !process.env.CI,
+      timeout: 300 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+>>>>>>> origin/cursor/tester-1763470190379
       env: {
-        ...process.env,
         PORT: '8000',
         NODE_ENV: 'test',
         DATABASE_URL: process.env.DATABASE_URL || 'postgresql://tu_phmhhk:qM4y8EBHYxGxRX4SEqd6K8CsQMR7jL7HMxJC6tEB@37.156.46.78:43971/test_db_vk11wc',
