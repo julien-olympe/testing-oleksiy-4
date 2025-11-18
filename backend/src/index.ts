@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -22,7 +21,7 @@ async function buildServer() {
     logger: false, // We use custom logging
     requestIdLogLabel: 'requestId',
     genReqId: () => {
-      return ''; // We handle this in middleware, but need to return a string
+      return ''; // We handle this in middleware, return empty string
     },
   });
 

@@ -1,8 +1,9 @@
-import { FastifyRequest, FastifyReply, FastifyError } from 'fastify';
+import { FastifyRequest, FastifyReply, FastifyError, FastifyInstance } from 'fastify';
 import { formatErrorResponse, AppError } from '../utils/errors';
 import { Logger } from '../utils/logger';
 
 export async function errorHandler(
+  this: FastifyInstance,
   error: FastifyError | Error,
   request: FastifyRequest | any,
   reply: FastifyReply | any
