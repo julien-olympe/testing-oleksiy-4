@@ -802,3 +802,182 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 10. Rename Function E2E Tests (Section 10)
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/10-rename-function.md`  
+**Test File Created:** `/workspace/frontend/e2e/rename-function.spec.ts`  
+**Total Tests:** 5
+
+### 10.2 Test Coverage
+
+The rename function tests cover the following scenarios:
+1. FUNC-RENAME-001: Rename Function - Positive Case ✅
+2. FUNC-RENAME-002: Rename Function - Negative Case - Permission Denied ⚠️
+3. FUNC-RENAME-003: Rename Function - Negative Case - Invalid Function Name ✅
+4. FUNC-RENAME-004: Rename Function - Negative Case - Duplicate Function Name ✅
+5. FUNC-RENAME-005: Rename Function - Cancel Rename Action ✅
+
+### 10.3 Execution Status
+
+**Status:** ✅ 4/5 tests passing (80% pass rate)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/rename-function.spec.ts --reporter=list`  
+**Test Duration:** ~56 seconds  
+**Overall Result:** 4 tests passed, 1 test failed
+
+### 10.4 Detailed Test Results
+
+#### Test 1: FUNC-RENAME-001 - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~19-22 seconds
+- **Details:** Successfully renamed function from "TestFunction" to "Renamed Function"
+- **Issues Fixed:**
+  - Fixed function card selector to handle DOM changes after clicking rename button
+  - Updated input field detection to search directly instead of within card context
+  - Added proper waits for Project Editor tab activation
+
+#### Test 2: FUNC-RENAME-002 - Permission Denied
+- **Status:** ⚠️ FAILED
+- **Duration:** ~25-30 seconds
+- **Issue:** Function card not visible to secondary user after permission setup
+- **Root Cause Analysis:**
+  - Backend correctly restricts renaming to project owners only (using `checkProjectOwnership`)
+  - Secondary user has project permission but function may not be visible or loading slowly
+  - Test setup creates function as owner and adds permission for secondary user
+  - Function card visibility timing issue or permission check preventing function list display
+- **Recommendation:** 
+  - Verify that users with project permissions can view functions (view permission)
+  - Check if function list API endpoint respects project permissions correctly
+  - Add better error handling for permission scenarios
+
+#### Test 3: FUNC-RENAME-003 - Invalid Function Name
+- **Status:** ✅ PASSED
+- **Duration:** ~12-15 seconds
+- **Details:** Successfully rejected empty function name
+- **Backend Validation:** ✅ Working correctly - validates name length (1-255 characters)
+
+#### Test 4: FUNC-RENAME-004 - Duplicate Function Name
+- **Status:** ✅ PASSED
+- **Duration:** ~18-19 seconds
+- **Details:** Successfully rejected duplicate function name
+- **Backend Validation:** ✅ Working correctly - checks for duplicate names within same project
+- **Error Message:** Backend returns "Function name already exists", frontend displays "failed to rename function"
+
+#### Test 5: FUNC-RENAME-005 - Cancel Rename Action
+- **Status:** ✅ PASSED
+- **Duration:** ~11-12 seconds
+- **Details:** Successfully cancelled rename operation using Escape key
+- **Frontend Behavior:** ✅ Correctly reverts to original name on cancel
+
+### 10.5 Backend Changes Applied
+
+**File Modified:** `/workspace/backend/src/routes/functions.ts`
+
+1. **Permission Check Update:**
+   - Changed from `checkProjectAccess` to `checkProjectOwnership` for PUT endpoint
+   - Only project owners can rename functions (restricts non-owners from renaming)
+   - Import added: `checkProjectOwnership` from permissions utils
+
+2. **Duplicate Name Validation:**
+   - Added check for duplicate function names within the same project
+   - Excludes current function from duplicate check
+   - Returns ValidationError with message "Function name already exists"
+   - Trims function name before validation and update
+
+**Code Changes:**
+```typescript
+// Only project owners can rename functions
+await checkProjectOwnership(userId, func.projectId);
+
+// Check for duplicate function name in the same project
+const existingFunction = await prisma.function.findFirst({
+  where: {
+    projectId: func.projectId,
+    name: name.trim(),
+    id: { not: functionId },
+  },
+});
+
+if (existingFunction) {
+  throw new ValidationError('Invalid function name', {
+    field: 'name',
+    validationErrors: [{
+      field: 'name',
+      message: 'Function name already exists',
+    }],
+  });
+}
+```
+
+### 10.6 Test File Created
+
+**File:** `/workspace/frontend/e2e/rename-function.spec.ts`
+
+**Test Structure:**
+- 5 test cases covering positive and negative scenarios
+- Proper setup and teardown for each test
+- Handles user registration/login with fallback logic
+- Creates necessary test data (projects, functions) as needed
+- Validates error messages and UI state changes
+
+**Key Test Patterns:**
+- Uses `filter({ hasText: ... })` for reliable element selection
+- Searches for input fields directly after DOM changes
+- Handles timing issues with appropriate waits
+- Validates both error notifications and UI state
+
+### 10.7 Issues and Recommendations
+
+**Passing Tests:** 4/5 (80%)
+- ✅ Positive rename flow working correctly
+- ✅ Invalid name validation working
+- ✅ Duplicate name validation working
+- ✅ Cancel action working correctly
+
+**Failing Test:** 1/5 (20%)
+- ⚠️ Permission denied test - function visibility issue
+
+**Recommendations:**
+1. **Investigate Function Visibility:**
+   - Verify that users with project permissions can view functions
+   - Check if function list endpoint properly filters by project permissions
+   - Ensure function cards are displayed for users with view access
+
+2. **Error Message Consistency:**
+   - Consider showing backend error messages directly to users
+   - Current: Backend returns "Function name already exists" but frontend shows "failed to rename function"
+   - Improvement: Display specific validation errors from backend
+
+3. **Test Stability:**
+   - All passing tests are stable and consistent
+   - Permission test may need investigation of permission system behavior
+
+### 10.8 Summary
+
+**Overall Status:** ✅ **MOSTLY PASSING** (4/5 tests)
+
+The rename function feature is working correctly for:
+- ✅ Successful renaming (owners only)
+- ✅ Input validation (empty names rejected)
+- ✅ Duplicate name prevention
+- ✅ Cancel operation
+
+**Remaining Work:**
+- ⚠️ Verify permission system allows view access for non-owners
+- ⚠️ Investigate function visibility for users with project permissions
+
+**Backend Changes:** ✅ Complete
+- Permission restriction to owners only
+- Duplicate name validation
+- Input validation (already existed)
+
+**Test Coverage:** ✅ Comprehensive
+- All specified test scenarios implemented
+- Positive and negative cases covered
+- Edge cases (cancel) covered

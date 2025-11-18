@@ -3,7 +3,7 @@ import { prisma } from '../db/client';
 import { validateUUID } from '../utils/validation';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
-import { checkProjectAccess } from '../utils/permissions';
+import { checkProjectAccess, checkProjectOwnership } from '../utils/permissions';
 
 interface CreateFunctionBody {
   name?: string;
@@ -154,11 +154,33 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
         throw new NotFoundError('Function');
       }
 
-      await checkProjectAccess(userId, func.projectId);
+      // Only project owners can rename functions
+      await checkProjectOwnership(userId, func.projectId);
+
+      // Check for duplicate function name in the same project
+      const existingFunction = await prisma.function.findFirst({
+        where: {
+          projectId: func.projectId,
+          name: name.trim(),
+          id: { not: functionId }, // Exclude current function
+        },
+      });
+
+      if (existingFunction) {
+        throw new ValidationError('Invalid function name', {
+          field: 'name',
+          validationErrors: [
+            {
+              field: 'name',
+              message: 'Function name already exists',
+            },
+          ],
+        });
+      }
 
       const updated = await prisma.function.update({
         where: { id: functionId },
-        data: { name },
+        data: { name: name.trim() },
       });
 
       reply.send({
