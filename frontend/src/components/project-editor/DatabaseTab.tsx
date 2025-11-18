@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { debounce } from '../../utils/debounce';
 import type { Database } from '../../types';
@@ -20,8 +20,25 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({
   const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(
     databases.length > 0 ? databases[0].id : null
   );
+  
+  // Local state for input values to provide immediate feedback
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   const selectedDatabase = databases.find((db) => db.id === selectedDatabaseId);
+  
+  // Initialize input values from database when databases change
+  useEffect(() => {
+    const values: Record<string, string> = {};
+    databases.forEach((db) => {
+      db.instances.forEach((instance) => {
+        instance.values.forEach((value) => {
+          const key = `${instance.id}-${value.propertyId}`;
+          values[key] = value.value;
+        });
+      });
+    });
+    setInputValues(values);
+  }, [databases]);
 
   const handleCreateInstance = async () => {
     if (!selectedDatabaseId) return;
@@ -54,8 +71,19 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({
         onDataChange();
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'response' in err) {
-          const axiosError = err as { response: { data: { error: { message: string } } } };
-          onError(axiosError.response?.data?.error?.message || 'Failed to update instance');
+          const axiosError = err as { 
+            response?: { 
+              data?: { 
+                error?: { message?: string } 
+              } 
+            } 
+          };
+          const errorMessage = axiosError.response?.data?.error?.message;
+          if (errorMessage) {
+            onError(errorMessage);
+          } else {
+            onError('Failed to update instance');
+          }
         } else {
           onError('Failed to update instance');
         }
@@ -65,7 +93,16 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({
   );
 
   const handleValueChange = (instanceId: string, propertyId: string, value: string) => {
+    // Update local state immediately for responsive UI
+    const key = `${instanceId}-${propertyId}`;
+    setInputValues((prev) => ({ ...prev, [key]: value }));
+    // Debounce the API call
     debouncedUpdateValue(instanceId, propertyId, value);
+  };
+  
+  const getInputValue = (instanceId: string, propertyId: string, defaultValue: string): string => {
+    const key = `${instanceId}-${propertyId}`;
+    return inputValues[key] !== undefined ? inputValues[key] : defaultValue;
   };
 
   return (
@@ -110,7 +147,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({
                         <label>{value.propertyName}:</label>
                         <input
                           type="text"
-                          value={value.value}
+                          value={getInputValue(instance.id, value.propertyId, value.value)}
                           onChange={(e) =>
                             handleValueChange(instance.id, value.propertyId, e.target.value)
                           }
