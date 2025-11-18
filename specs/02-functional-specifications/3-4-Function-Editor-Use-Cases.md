@@ -14,7 +14,7 @@
 **Processing/Actions**:
 1. System displays Function Editor with brick list on left side
 2. System displays available bricks: "List instances by DB name", "Get first instance", "Log instance props"
-3. User searches for brick using search bar (optional)
+3. User searches for brick using search bar
 4. User drags brick from brick list
 5. User drops brick in central grid panel
 6. System validates drop location is within grid panel

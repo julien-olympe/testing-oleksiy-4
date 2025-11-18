@@ -12,7 +12,7 @@
 
 **Processing/Actions**:
 1. System displays Home Screen with brick list on left showing "Project" brick
-2. User searches for "Project" brick using search bar (optional)
+2. User searches for "Project" brick using search bar
 3. User drags "Project" brick from brick list
 4. User drops brick in project list area (center/right side)
 5. System validates drop location is valid project list area

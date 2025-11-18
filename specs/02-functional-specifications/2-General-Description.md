@@ -34,7 +34,7 @@ The system supports two types of users:
 
 **Regular Users**: Users who frequently use the application to create and manage multiple projects and functions. They are familiar with the visual programming interface and brick-based logic construction.
 
-**Occasional Users**: Users who use the application infrequently. They may need to re-familiarize themselves with the interface and brick operations.
+**Occasional Users**: Users who use the application infrequently. They will need to re-familiarize themselves with the interface and brick operations.
 
 All users have varying levels of technical experience. The visual programming interface is designed to be intuitive, but users must understand the concept of connecting inputs and outputs between bricks to create valid logic.
 
