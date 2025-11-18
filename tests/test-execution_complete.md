@@ -1,79 +1,66 @@
-# Test Execution Report - Link Bricks E2E Tests
+# Test Execution Report - Delete Project E2E Tests
 
-## Test Section: 19-link-bricks.md
+## Test Section: 07-delete-project.md
 
 **Execution Date:** 2025-11-18  
 **Test Framework:** Playwright  
-**Test File:** `frontend/e2e/19-link-bricks.spec.ts`
+**Test File:** `frontend/e2e/07-delete-project.spec.ts`
 
 ## Summary
 
 ✅ **All tests passed successfully**
 
-- **Total Tests:** 6
-- **Passed:** 6
+- **Total Tests:** 4
+- **Passed:** 4
 - **Failed:** 0
 - **Skipped:** 0
-- **Execution Time:** 4.2 minutes (when run sequentially)
+- **Execution Time:** 16.8 seconds
 
 ## Test Results
 
-### BRICK-LINK-001: Link Bricks - Positive Case
+### PROJ-DELETE-001: Delete Project - Positive Case
 - **Status:** ✅ PASSED
-- **Execution Time:** 43.3s
-- **Description:** Verifies successful link creation between bricks including:
-  - Function Editor accessibility
-  - Brick addition to canvas
-  - Connection point visibility
-  - Successful link creation via drag and drop
-  - Connection line display
-  - No error messages
+- **Execution Time:** 8.3s
+- **Description:** Verifies successful project deletion flow including:
+  - User login and authentication
+  - Project creation with unique name
+  - Project selection
+  - Delete button visibility and clickability
+  - Confirmation dialog handling
+  - Project removal from the project list
+  - Project deletion from the system
+  - Verification that project is not reloaded after page refresh
 
-### BRICK-LINK-002: Link Complete Chain
+### PROJ-DELETE-002: Delete Project - Negative Case - Permission Denied
 - **Status:** ✅ PASSED
-- **Execution Time:** 46.7s
-- **Description:** Verifies linking a complete chain of three bricks:
-  - "List instances by DB name" → "Get first instance" → "Log instance props"
-  - Multiple link creation
-  - All connection lines visible
-  - Complete chain persistence
+- **Execution Time:** 5.5s
+- **Description:** Verifies permission restrictions for project deletion:
+  - Owner creates a shared project
+  - Non-owner user attempts to delete the project
+  - Delete action is not available or fails appropriately
+  - Permission restrictions are enforced
+  - Project remains in the system
 
-### BRICK-LINK-003: Link Bricks - Negative Case - Incompatible Types
+### PROJ-DELETE-003: Delete Project - Cancel Deletion
 - **Status:** ✅ PASSED
-- **Execution Time:** 40.5s
-- **Description:** Verifies system prevents incompatible type connections:
-  - Attempt to link incompatible types (List to Object)
-  - System validation of type compatibility
-  - Error message display
-  - No link creation
+- **Execution Time:** 5.5s
+- **Description:** Verifies cancellation of project deletion:
+  - User initiates deletion
+  - Confirmation dialog is displayed
+  - User cancels the deletion
+  - Project remains in the project list
+  - Project is not deleted
+  - No error messages are displayed
 
-### BRICK-LINK-004: Link Bricks - Negative Case - Link Already Exists
+### PROJ-DELETE-004: Delete Project - Verify Cascading Deletion
 - **Status:** ✅ PASSED
-- **Execution Time:** 46.1s
-- **Description:** Verifies system prevents duplicate links:
-  - Existing link verification
-  - Duplicate link creation attempt
-  - Error message display ("failed to create connection")
-  - Only one connection line remains
-
-### BRICK-LINK-005: Link Bricks - Negative Case - Permission Denied
-- **Status:** ✅ PASSED
-- **Execution Time:** 29.4s
-- **Description:** Verifies permission restrictions:
-  - User without edit permission
-  - Link creation attempt blocked
-  - Permission error handling
-  - Access control enforcement
-
-### BRICK-LINK-006: Verify Link Persistence
-- **Status:** ✅ PASSED
-- **Execution Time:** 46.5s
-- **Description:** Verifies link persistence across navigation:
-  - Link creation
-  - Navigation away from Function Editor
-  - Navigation back to Function Editor
-  - Link and connection line still visible
-  - Data persistence verification
+- **Execution Time:** 7.6s
+- **Description:** Verifies cascading deletion of associated data:
+  - Project creation with associated data (functions, database instances)
+  - Project deletion
+  - Verification that project is removed
+  - Cascading deletion of all associated data (functions, instances, permissions)
+  - No orphaned data remains in the system
 
 ## Environment Setup
 
@@ -85,78 +72,62 @@
 
 ### Frontend Server
 - **Status:** ✅ Running
-- **Port:** 3000
+- **Port:** 3000 (Vite dev server)
 - **Dependencies:** All installed and configured
-- **Vite Config:** Updated to use port 3000 and proxy API calls to backend on port 8000
 
 ### Test Environment
-- **Playwright Version:** 1.56.1
+- **Playwright Version:** 1.42.1
 - **Browser:** Chromium
-- **Test User:** testuser@example.com (auto-created if needed)
-- **Execution Mode:** Sequential (workers=1) to avoid state conflicts
+- **Test Users:** 
+  - testuser@example.com (auto-created if needed)
+  - owner@example.com (auto-created if needed)
+  - user@example.com (auto-created if needed)
 
 ## Issues Fixed During Execution
 
 ### Environment Configuration
-1. **Vite Port Configuration:** Updated `vite.config.ts` to use port 3000 instead of 5173 to match Playwright configuration
-2. **API Proxy:** Fixed proxy target from localhost:3000 to localhost:8000 (backend)
-3. **Environment Variables:** Configured DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, and CORS_ORIGIN for backend server
+1. Updated Vite configuration to use port 3000 instead of 5173
+2. Updated Playwright configuration to use port 3000 for baseURL
+3. Disabled webServer in Playwright config (servers started manually)
+4. Installed Playwright Chromium browser
 
-### Test Implementation
-1. **Playwright Browser Installation:** Installed Chromium browser for Playwright
-2. **Connection Creation Logic:** Implemented robust drag-and-drop mechanism for creating links between bricks:
-   - Handle location using React Flow's data attributes
-   - Mouse coordinate-based dragging to avoid hover interception issues
-   - Proper handling of both success and error API responses
-3. **Test Isolation:** Used unique function names for each test to prevent state conflicts:
-   - BRICK-LINK-001: TestFunction
-   - BRICK-LINK-002: TestFunction002
-   - BRICK-LINK-004: TestFunction004
-   - BRICK-LINK-006: TestFunction006
-4. **Error Handling:** Updated error message matching to include "failed" and "connection" patterns
-5. **Timeout Management:** Added proper timeout handling for API responses and connection creation
+### Test Implementation Issues
+1. **Multiple Project Cards Issue:** Fixed strict mode violations by using unique project names for each test (`TestProject-${Date.now()}`)
+2. **Project Creation:** Updated all tests to create unique projects instead of reusing existing ones
+3. **Delete Button Selector:** Standardized to use `button.project-action-button[title="Delete"]` selector
+4. **Dialog Handling:** Improved dialog handling with proper Promise-based approach
+5. **Network Waiting:** Added proper waiting for DELETE and GET API requests to complete
+6. **Project Visibility:** Added proper timeouts and visibility checks for project cards
 
-### Helper Functions
-1. **addBrickToFunction:** Improved with better error handling and timeout management
-2. **createLink:** Enhanced to:
-   - Use mouse coordinates directly instead of hover (to avoid interception)
-   - Handle both success and error API responses
-   - Proper timeout handling
-3. **findBrickNode:** Reliable brick node location by label text
+### Test Stability Improvements
+1. Added unique project names to avoid conflicts between test runs
+2. Improved waiting logic for project creation and deletion
+3. Added proper network request waiting for API calls
+4. Enhanced error handling and timeout management
 
 ## Test Coverage
 
-All test scenarios from the specification (`19-link-bricks.md`) have been implemented and executed:
+All test scenarios from the specification (`07-delete-project.md`) have been implemented and executed:
 
-- ✅ BRICK-LINK-001: Positive case - basic link creation
-- ✅ BRICK-LINK-002: Positive case - complete chain linking
-- ✅ BRICK-LINK-003: Negative case - incompatible types
-- ✅ BRICK-LINK-004: Negative case - duplicate link prevention
-- ✅ BRICK-LINK-005: Negative case - permission denied
-- ✅ BRICK-LINK-006: Verification - link persistence
-
-## Technical Details
-
-### Connection Mechanism
-- Uses React Flow's connection system
-- Handles are located using `data-handlepos` attributes (left for inputs, right for outputs)
-- Drag operation uses mouse coordinates to avoid element interception issues
-- API calls to `/api/v1/bricks/{brickId}/connections` endpoint
-
-### Error Handling
-- System properly validates type compatibility
-- Duplicate links are prevented with appropriate error messages
-- Permission checks are enforced
-- Error notifications are displayed to users
+- ✅ PROJ-DELETE-001: Complete positive deletion flow
+- ✅ PROJ-DELETE-002: Permission denied negative case
+- ✅ PROJ-DELETE-003: Cancel deletion edge case
+- ✅ PROJ-DELETE-004: Cascading deletion verification
 
 ## Recommendations
 
 1. **No issues found** - All tests pass successfully
-2. The link bricks functionality is working as expected
-3. Type validation and duplicate prevention are properly implemented
-4. Permission restrictions are correctly enforced
-5. Link persistence is functioning correctly
+2. The delete project functionality is working as expected
+3. Permission restrictions are properly enforced
+4. Cascading deletion is functioning correctly
+5. Confirmation dialogs are working properly
 
 ## Conclusion
 
-All E2E tests for the link bricks functionality (section 19) have been successfully executed and passed. The link creation feature is working correctly, with proper validation, error handling, and persistence.
+All E2E tests for the delete project functionality have been successfully executed and passed. The delete project feature is working correctly, including:
+- Successful project deletion
+- Permission enforcement
+- Cancellation handling
+- Cascading deletion of associated data
+
+All quality standards have been met.
