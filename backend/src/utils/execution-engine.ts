@@ -82,7 +82,7 @@ export class ExecutionEngine {
       console.log(`  - connectionsTo: ${brick.connectionsTo.length}`);
       console.log(`  - configuration:`, JSON.stringify(brick.configuration));
       if (brick.connectionsTo.length > 0) {
-        console.log(`  - connectionsTo details:`, JSON.stringify(brick.connectionsTo.map(c => ({
+        console.log(`  - connectionsTo details:`, JSON.stringify(brick.connectionsTo.map((c: any) => ({
           fromBrickId: c.fromBrickId,
           fromOutputName: c.fromOutputName,
           toInputName: c.toInputName,
@@ -105,7 +105,7 @@ export class ExecutionEngine {
     const results: ExecutionResult[] = [];
 
     for (const brickId of executionOrder) {
-      const brick = func.bricks.find((b) => b.id === brickId);
+      const brick = func.bricks.find((b: any) => b.id === brickId);
       if (!brick) continue;
 
       const timeoutPromise = new Promise<ExecutionResult>((_, reject) => {
@@ -365,7 +365,7 @@ export class ExecutionEngine {
       });
     }
 
-    const list = database.instances.map((instance) => {
+    const list = database.instances.map((instance: any) => {
       const values: Record<string, string> = {};
       for (const value of instance.values) {
         values[value.property.name] = value.value;
@@ -402,7 +402,7 @@ export class ExecutionEngine {
         brickId: brick.id,
         brickType: 'GetFirstInstance',
         missingInputs: ['List'],
-        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
+        availableConnections: brick.connectionsTo.map((c: any) => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 
@@ -465,7 +465,7 @@ export class ExecutionEngine {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
         missingInputs: ['Object'],
-        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
+        availableConnections: brick.connectionsTo.map((c: any) => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 

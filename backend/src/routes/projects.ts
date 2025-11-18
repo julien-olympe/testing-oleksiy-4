@@ -70,7 +70,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
       ]);
 
       reply.send({
-        projects: projects.map((p) => ({
+        projects: projects.map((p: any) => ({
           id: p.id,
           name: p.name,
           ownerId: p.ownerId,
@@ -284,7 +284,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
 
       // Get instances for project databases
       const projectDatabasesWithInstances = await Promise.all(
-        project.databases.map(async (db) => {
+        project.databases.map(async (db: any) => {
           const instances = await prisma.databaseInstance.findMany({
             where: { databaseId: db.id },
             include: {
@@ -331,33 +331,33 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: project.createdAt.toISOString(),
           updatedAt: project.updatedAt.toISOString(),
         },
-        functions: project.functions.map((f) => ({
+        functions: project.functions.map((f: any) => ({
           id: f.id,
           name: f.name,
           projectId: f.projectId,
           createdAt: f.createdAt.toISOString(),
           updatedAt: f.updatedAt.toISOString(),
         })),
-        permissions: project.permissions.map((p) => ({
+        permissions: project.permissions.map((p: any) => ({
           userId: p.userId,
           userEmail: p.user.email,
           createdAt: p.createdAt.toISOString(),
         })),
-        databases: allDatabases.map((d) => ({
+        databases: allDatabases.map((d: any) => ({
           id: d.id,
           name: d.name,
           projectId: d.projectId,
           createdAt: d.createdAt.toISOString(),
-          properties: d.properties.map((p) => ({
+          properties: d.properties.map((p: any) => ({
             id: p.id,
             name: p.name,
             type: p.type,
             createdAt: p.createdAt.toISOString(),
           })),
-          instances: (d.instances || []).map((i) => ({
+          instances: (d.instances || []).map((i: any) => ({
             id: i.id,
             databaseId: i.databaseId,
-            values: i.values.map((v) => ({
+            values: i.values.map((v: any) => ({
               propertyId: v.propertyId,
               propertyName: v.property.name,
               value: v.value,

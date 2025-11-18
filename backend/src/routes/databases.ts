@@ -41,11 +41,11 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
       const databases = defaultDatabase ? [defaultDatabase, ...projectDatabases] : projectDatabases;
 
       reply.send({
-        databases: databases.map((d) => ({
+        databases: databases.map((d: any) => ({
           id: d.id,
           name: d.name,
           projectId: d.projectId,
-          properties: d.properties.map((p) => ({
+          properties: d.properties.map((p: any) => ({
             id: p.id,
             name: p.name,
             type: p.type,
@@ -90,10 +90,10 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       reply.send({
-        instances: instances.map((i) => ({
+        instances: instances.map((i: any) => ({
           id: i.id,
           databaseId: i.databaseId,
-          values: i.values.map((v) => ({
+          values: i.values.map((v: any) => ({
             propertyId: v.propertyId,
             propertyName: v.property.name,
             value: v.value,
@@ -135,7 +135,7 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
         // Create empty values for all properties
         await Promise.all(
-          database.properties.map((property) =>
+          database.properties.map((property: any) =>
             tx.databaseInstanceValue.create({
               data: {
                 instanceId: newInstance.id,
@@ -164,7 +164,7 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
         instance: {
           id: instance.id,
           databaseId: instance.databaseId,
-          values: instance.values.map((v) => ({
+          values: instance.values.map((v: any) => ({
             propertyId: v.propertyId,
             propertyName: v.property.name,
             value: v.value,
@@ -265,7 +265,7 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
         instance: {
           id: updatedInstance!.id,
           databaseId: updatedInstance!.databaseId,
-          values: updatedInstance!.values.map((v) => ({
+          values: updatedInstance!.values.map((v: any) => ({
             propertyId: v.propertyId,
             propertyName: v.property.name,
             value: v.value,

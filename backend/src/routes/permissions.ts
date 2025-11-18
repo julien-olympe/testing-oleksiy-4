@@ -36,7 +36,7 @@ export async function permissionRoutes(fastify: FastifyInstance): Promise<void> 
       });
 
       reply.send({
-        permissions: permissions.map((p) => ({
+        permissions: permissions.map((p: any) => ({
           userId: p.userId,
           userEmail: p.user.email,
           createdAt: p.createdAt.toISOString(),

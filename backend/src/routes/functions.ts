@@ -32,7 +32,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       reply.send({
-        functions: functions.map((f) => ({
+        functions: functions.map((f: any) => ({
           id: f.id,
           name: f.name,
           projectId: f.projectId,
@@ -239,7 +239,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: func.createdAt.toISOString(),
           updatedAt: func.updatedAt.toISOString(),
         },
-        bricks: func.bricks.map((b) => ({
+        bricks: func.bricks.map((b: any) => ({
           id: b.id,
           functionId: b.functionId,
           type: b.type,
@@ -249,8 +249,8 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: b.createdAt.toISOString(),
           updatedAt: b.updatedAt.toISOString(),
         })),
-        connections: func.bricks.flatMap((b) =>
-          b.connectionsFrom.map((c) => ({
+        connections: func.bricks.flatMap((b: any) =>
+          b.connectionsFrom.map((c: any) => ({
             id: c.id,
             fromBrickId: c.fromBrickId,
             fromOutputName: c.fromOutputName,
