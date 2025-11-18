@@ -34,7 +34,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const functionId = (request.params as { functionId: string }).functionId;
-      const { type, positionX, positionY, configuration } = request.body;
+      const { type, positionX, positionY, configuration } = request.body as CreateBrickBody;
 
       validateUUID(functionId, 'functionId');
 
@@ -119,12 +119,12 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // PUT /api/v1/bricks/:id
   fastify.put<{ Body: UpdateBrickBody }>(
-    '/:id',
+    '/bricks/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const brickId = (request.params as { id: string }).id;
-      const { positionX, positionY, configuration } = request.body;
+      const { positionX, positionY, configuration } = request.body as UpdateBrickBody;
 
       validateUUID(brickId, 'id');
 
@@ -216,7 +216,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/bricks/:id
   fastify.delete(
-    '/:id',
+    '/bricks/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
@@ -249,12 +249,12 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // POST /api/v1/bricks/:id/connections
   fastify.post<{ Body: CreateConnectionBody }>(
-    '/:id/connections',
+    '/bricks/:id/connections',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const fromBrickId = (request.params as { id: string }).id;
-      const { fromOutputName, toBrickId, toInputName } = request.body;
+      const { fromOutputName, toBrickId, toInputName } = request.body as CreateConnectionBody;
 
       validateUUID(fromBrickId, 'id');
       validateUUID(toBrickId, 'toBrickId');
@@ -345,7 +345,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/bricks/:id/connections/:connectionId
   fastify.delete(
-    '/:id/connections/:connectionId',
+    '/bricks/:id/connections/:connectionId',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
