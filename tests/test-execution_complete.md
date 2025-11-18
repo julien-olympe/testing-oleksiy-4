@@ -802,3 +802,121 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 11. Add Project Permission End-to-End Tests (Section 13)
+
+### 11.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/13-add-project-permission.md`  
+**Test IDs:** PERM-ADD-001 through PERM-ADD-006  
+**Test Names:**
+- PERM-ADD-001: Add Project Permission - Positive Case
+- PERM-ADD-002: Add Project Permission - Negative Case - User Not Found
+- PERM-ADD-003: Add Project Permission - Negative Case - User Already Has Permission
+- PERM-ADD-004: Add Project Permission - Negative Case - Invalid Email Format
+- PERM-ADD-005: Add Project Permission - Negative Case - Empty Email Field
+- PERM-ADD-006: Add Project Permission - Negative Case - Permission Denied
+
+### 11.2 Test File Created
+
+**Status:** ✅ Test file created  
+**Test File:** `/workspace/frontend/e2e/13-add-project-permission.spec.ts`  
+**Test Structure:** Complete test suite with 6 test cases covering all scenarios from specification
+
+### 11.3 Execution Status
+
+**Status:** ⚠️ IN PROGRESS - UI Interaction Issue
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/13-add-project-permission.spec.ts --reporter=list`  
+**Overall Result:** 0/6 tests passing (all failing on project renaming step)
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL
+- ✅ Environment variables: Loaded from /workspace/.env
+
+### 11.4 Issues Found and Fixes Applied
+
+**Total Issues Fixed:** 5
+
+1. **Helper Function Parameter Issues:**
+   - Issue: Helper functions `ensureUserExists` and `loginAndGetProject` were trying to use `page` from closure instead of parameter
+   - Fix: Updated both functions to accept `page: Page` as first parameter
+   - Impact: Functions now work correctly in both `beforeAll` and test contexts
+
+2. **Project List Selector:**
+   - Issue: Test was using `.project-list` selector which doesn't exist
+   - Fix: Changed to `.project-list-area` to match actual UI
+   - Impact: Project creation step now works correctly
+
+3. **User Registration/Login Logic:**
+   - Issue: `ensureUserExists` function had complex error handling that was timing out
+   - Fix: Simplified to try login first (user might already exist), then register if login fails
+   - Impact: User setup is more reliable and faster
+
+4. **Test Setup Approach:**
+   - Issue: `beforeAll` hook was timing out trying to set up all users
+   - Fix: Moved user setup to `beforeEach` (only owner) and individual tests create users as needed
+   - Impact: Tests are more resilient and don't block on setup failures
+
+5. **Project Renaming Location:**
+   - Issue: Test was trying to rename project in project editor instead of home screen
+   - Fix: Updated `loginAndGetProject` to rename project on home screen before opening editor
+   - Impact: Test flow now matches actual UI workflow
+
+### 11.5 Remaining Issue
+
+**Issue:** Project Renaming UI Interaction
+
+**Description:** After clicking the rename button on a project card, the input field (`input.project-name-input`) is not appearing as expected. The test clicks the rename button successfully, but the input field does not become visible within the timeout period.
+
+**Error Details:**
+- All 6 tests fail at the same step: `await expect(nameInput).toBeVisible({ timeout: 10000 })`
+- Location: `/workspace/frontend/e2e/13-add-project-permission.spec.ts:136`
+- The rename button click appears to work (no error on click), but the state change to show the input field is not happening
+
+**Possible Causes:**
+1. The rename button selector might not be matching the correct button
+2. The state update after clicking rename might require additional time or a different trigger
+3. The input field selector might be incorrect or the field might be rendered in a different location
+4. There might be a React state update timing issue
+
+**Current Implementation:**
+```typescript
+const renameButton = newProjectCard.locator('button.project-action-button[title="Rename"]').or(newProjectCard.locator('button.project-action-button').first());
+await expect(renameButton).toBeVisible({ timeout: 5000 });
+await renameButton.click();
+await page.waitForTimeout(1000);
+const nameInput = newProjectCard.locator('input.project-name-input');
+await expect(nameInput).toBeVisible({ timeout: 10000 }); // Fails here
+```
+
+**Recommendation:** 
+- Debug the actual UI behavior by checking screenshots/videos from test failures
+- Verify the rename button selector matches the actual button in the HomeScreen component
+- Check if there's a different way to trigger rename mode (e.g., double-click on project name)
+- Consider using a different approach: find project by any name, or skip renaming if project already exists with correct name
+
+### 11.6 Test Coverage
+
+**Test Cases Implemented:** 6/6 ✅
+- PERM-ADD-001: Positive case - Add permission for new user ✅
+- PERM-ADD-002: Negative case - User not found ✅
+- PERM-ADD-003: Negative case - User already has permission ✅
+- PERM-ADD-004: Negative case - Invalid email format ✅
+- PERM-ADD-005: Negative case - Empty email field ✅
+- PERM-ADD-006: Negative case - Permission denied ✅
+
+**Test Steps Coverage:** All test steps from specification are implemented
+
+### 11.7 Next Steps
+
+1. ⚠️ **URGENT:** Fix project renaming UI interaction issue
+2. Run all 6 tests and verify they pass
+3. Update test-execution_complete.md with final results
+4. Consider adding test data cleanup between test runs if needed
