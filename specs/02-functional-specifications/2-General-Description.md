@@ -8,6 +8,62 @@ The system maintains user isolation: each user sees only their own projects by d
 
 The application stores data persistently, including user accounts, projects, functions, database instances, and brick configurations. All data is user-specific and access-controlled.
 
+### System and Actor Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                               │
+│              Visual Programming Application                  │
+│                    (Major Use Case)                          │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                                                      │   │
+│  │  Register → Login → Create Projects → Manage        │   │
+│  │  Functions → Execute Logic                          │   │
+│  │                                                      │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+         ▲                    ▲                    ▲
+         │                    │                    │
+         │                    │                    │
+    ┌────┴────┐         ┌─────┴─────┐        ┌────┴────┐
+    │         │         │           │        │         │
+    │         │         │           │        │         │
+Unregistered  │    Registered User  │    System      │
+   User       │         │           │        │         │
+    │         │         │           │        │         │
+    │         │         │           │        │         │
+    └─────────┴─────────┴───────────┴────────┴─────────┘
+```
+
+### Actors and Their Interactions
+
+**Unregistered User**: A visitor who has not yet created an account in the system. Unregistered users can access the registration functionality to create a new account. Once registered, they become Registered Users. Unregistered users cannot access any project-related functionality until they complete registration and login.
+
+**Registered User**: An authenticated user who has successfully registered and logged into the system. Registered users can:
+- View their own projects on the Home Screen
+- Create new projects
+- Open and edit their projects in the Project Editor
+- Manage functions within their projects
+- Create and configure database instances
+- Grant permissions to other registered users for their projects
+- Access projects shared with them through permissions
+- Open functions in the Function Editor
+- Build visual programming logic using bricks
+- Execute functions and view results in the Console
+- Logout from the system
+
+**System**: The application itself, which manages user authentication, data persistence, project and function storage, database operations, and execution of visual programming logic. The system interacts with users by:
+- Validating registration and login credentials
+- Storing and retrieving user data, projects, functions, and database instances
+- Enforcing access control and permissions
+- Executing functions built with visual bricks
+- Displaying results and error messages to users
+- Managing user sessions and authentication state
+
+The interaction flow begins when an Unregistered User registers, becoming a Registered User. Registered Users then interact with the system to create projects, build functions using visual programming, and execute their logic. All interactions are mediated through the Visual Programming Application, which serves as the central use case coordinating all actor activities.
+
 ## Conceptual Model
 
 The system follows a hierarchical structure:
