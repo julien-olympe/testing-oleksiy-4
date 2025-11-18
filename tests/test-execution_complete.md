@@ -512,7 +512,212 @@ cd /workspace/frontend && npx playwright test e2e/logout-user.spec.ts --reporter
 
 ---
 
-## 6. Issues Found and Fixes Applied
+## 6. Open Project Editor End-to-End Tests
+
+### 6.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/08-open-project-editor.md`  
+**Test IDs:** PROJ-OPEN-001, PROJ-OPEN-002, PROJ-OPEN-003, PROJ-OPEN-004  
+**Test Names:** 
+- PROJ-OPEN-001: Open Project Editor - Positive Case
+- PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+- PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+- PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+
+### 6.2 Test Coverage
+
+The open project editor tests cover the following use cases:
+1. **PROJ-OPEN-001:** Complete positive flow of opening project editor with all UI elements
+2. **PROJ-OPEN-002:** Negative case verifying permission restrictions
+3. **PROJ-OPEN-003:** Verification that all project data (functions, permissions, databases) loads correctly
+4. **PROJ-OPEN-004:** Tab navigation functionality within project editor
+
+### 6.3 Execution Status
+
+**Status:** ✅ 3/4 tests passing
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/08-open-project-editor.spec.ts --reporter=list`  
+**Test Duration:** ~20-30 seconds  
+**Overall Result:** 3 tests passed, 1 test failed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+- ✅ Backend dotenv: Fixed to load .env from workspace root
+
+**Test Configuration:**
+- Playwright config automatically starts backend and frontend services
+- Chromium browser used for testing
+- Test file created: `/workspace/frontend/e2e/08-open-project-editor.spec.ts`
+
+### 6.4 Detailed Test Results
+
+#### Test PROJ-OPEN-001: Open Project Editor - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~8.6 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user with test credentials
+  2. ✅ Verify user is on Home Screen
+  3. ✅ Verify/Create project "TestProject" (creates if doesn't exist)
+  4. ✅ Double-click on project to open editor
+  5. ✅ Verify Project Editor opens
+  6. ✅ Verify settings icon is visible
+  7. ✅ Verify header with tabs (Project, Permissions, Database)
+  8. ✅ Verify Project tab is active by default
+  9. ✅ Verify left side panel shows search bar and brick list
+  10. ✅ Verify "Function" brick is visible
+  11. ✅ Verify center area shows function list area
+  12. ✅ Verify all tabs are visible
+  13. ✅ Verify no error messages displayed
+- **Expected Results:** All verified ✅
+- **Fixes Applied:**
+  - Added project creation logic if project doesn't exist
+  - Fixed project renaming to use rename button click pattern
+  - Fixed function list selector to use `.function-list-area`
+
+#### Test PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+- **Status:** ⚠️ FAILED
+- **Duration:** ~14-18 seconds
+- **Test Steps Covered:**
+  1. ✅ Login as owner user
+  2. ⚠️ Create PrivateProject (test assumes it exists or needs creation)
+  3. ✅ Logout owner and login as user@example.com
+  4. ❌ Verify project "PrivateProject" is NOT displayed (fails - project is visible)
+  5. ⏭️ Test stops here due to failure
+- **Expected Results:** Project should not be visible to unauthorized user
+- **Actual Result:** Project "PrivateProject" is visible (count: 2 projects found)
+- **Root Cause Analysis:**
+  - Test requires specific setup: project owned by owner@example.com with no permissions for user@example.com
+  - Project may not exist or may have been created with default permissions
+  - Permission filtering in UI may not be working correctly
+- **Recommendations:**
+  1. Test should create PrivateProject explicitly as owner
+  2. Test should verify no permissions are granted to user@example.com
+  3. May need to check backend API to ensure projects are filtered by permissions
+  4. Consider testing with API directly to verify permission system works
+
+#### Test PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+- **Status:** ✅ PASSED
+- **Duration:** ~4.8-7.6 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user
+  2. ✅ Verify/Create project "TestProject"
+  3. ✅ Double-click to open project editor
+  4. ✅ Verify Project tab is active
+  5. ✅ Verify function list (may be empty)
+  6. ✅ Click Permissions tab and verify it's active
+  7. ✅ Verify permissions list is visible (may be empty)
+  8. ✅ Click Database tab and verify it's active
+  9. ✅ Verify database types are displayed
+  10. ✅ Verify database instances list is visible
+  11. ✅ Verify all project data is loaded correctly
+- **Expected Results:** All verified ✅
+- **Fixes Applied:**
+  - Added project creation logic
+  - Fixed permissions list verification to handle empty lists
+  - Fixed function list selector
+
+#### Test PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+- **Status:** ✅ PASSED
+- **Duration:** ~3.6-5.6 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user
+  2. ✅ Verify/Create project "TestProject"
+  3. ✅ Double-click to open project editor
+  4. ✅ Verify Project tab is active
+  5. ✅ Verify brick list is visible in Project tab
+  6. ✅ Click Permissions tab
+  7. ✅ Verify Permissions tab is active
+  8. ✅ Verify brick list is hidden in Permissions tab
+  9. ✅ Click Database tab
+  10. ✅ Verify Database tab is active
+  11. ✅ Verify brick list is hidden in Database tab
+  12. ✅ Click Project tab again
+  13. ✅ Verify Project tab is active
+  14. ✅ Verify brick list is visible again
+- **Expected Results:** All verified ✅
+- **Fixes Applied:**
+  - Added project creation logic
+  - Fixed tab navigation verification
+
+### 6.5 Issues Fixed During Execution
+
+1. **Backend Environment Variables:**
+   - Issue: Backend couldn't start - DATABASE_URL not found
+   - Fix: Added dotenv loading in `/workspace/backend/src/index.ts` to load .env from workspace root
+   - Impact: Backend now starts correctly with database connection
+
+2. **Project Creation in Tests:**
+   - Issue: Tests failed because "TestProject" didn't exist
+   - Fix: Added logic to create project by dragging Project brick and renaming if it doesn't exist
+   - Impact: Tests are now self-contained and don't require manual setup
+
+3. **Project Renaming:**
+   - Issue: Test couldn't find project name input for renaming
+   - Fix: Updated to use rename button click pattern (button.project-action-button → input.project-name-input)
+   - Impact: Project renaming now works correctly in tests
+
+4. **Function List Selector:**
+   - Issue: Test couldn't find function list container
+   - Fix: Changed selector from `.function-list, .functions-container` to `.function-list-area`
+   - Impact: Function list area is now correctly identified
+
+5. **Login Flow in PROJ-OPEN-002:**
+   - Issue: Complex registration/login flow was timing out
+   - Fix: Simplified to direct login pattern used in other tests
+   - Impact: Login now works, but test reveals permission filtering issue
+
+### 6.6 Terminal Output Summary
+
+**Test Execution Command:**
+```bash
+cd /workspace/frontend && npx playwright test e2e/08-open-project-editor.spec.ts --reporter=list
+```
+
+**Key Output:**
+- Services started successfully via Playwright webServer configuration
+- Backend: Running on http://localhost:3000
+- Frontend: Running on http://localhost:5173
+- Browser: Chromium 141.0.7390.37 (playwright build v1194)
+- Test duration: ~20-30 seconds per run
+- **Result:** 3 tests passed, 1 test failed
+
+**Error Messages:**
+- PROJ-OPEN-002: `expect(count).toBe(0)` failed - Expected: 0, Received: 2 (project is visible when it shouldn't be)
+
+**Test Artifacts Generated:**
+- Screenshots and videos for failed test (PROJ-OPEN-002)
+- Error context files for debugging
+
+### 6.7 Test Implementation Notes
+
+**Test File Created:**
+- `/workspace/frontend/e2e/08-open-project-editor.spec.ts` - New test file created based on specifications
+
+**Test Structure:**
+- Uses Playwright test framework
+- Follows the same patterns as critical-path.spec.ts and logout-user.spec.ts
+- Uses test steps for better organization and reporting
+- Properly handles async operations and waits
+- Self-contained tests that create required data if needed
+
+**Key Features Tested:**
+1. Project editor opening via double-click
+2. UI element visibility (settings icon, tabs, brick list, function list)
+3. Tab navigation (Project, Permissions, Database)
+4. Project data loading (functions, permissions, databases)
+5. Permission restrictions (negative test case)
+
+**Remaining Issue:**
+- PROJ-OPEN-002 requires proper test setup with project ownership and permissions. The test correctly identifies that unauthorized projects are visible, which may indicate a bug in permission filtering or incomplete test setup.
+
+---
+
+## 7. Issues Found and Fixes Applied
 
 ### 6.1 TypeScript Strict Mode Errors
 
@@ -797,8 +1002,16 @@ cd /workspace/frontend && npm run test:e2e
 - E2E Tests: 3 (passed - 15/15 steps/tests total)
   - Critical Path: 1 test (13/13 steps passing)
   - Logout User: 2 tests (2/2 tests passing)
-**Tests Passed:** 3 unit tests + 15 E2E steps/tests  
-**Tests Failed:** 0 unit tests + 0 E2E steps/tests
-**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
+- E2E Tests - Open Project Editor: 4 tests (3/4 passing)
+  - PROJ-OPEN-001: Open Project Editor - Positive Case ✅ PASSED
+  - PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied ⚠️ FAILED (project visibility issue - may indicate incomplete test setup or permission bug)
+  - PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading ✅ PASSED
+  - PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation ✅ PASSED
+**Tests Passed:** 3 unit tests + 18 E2E tests/steps  
+**Tests Failed:** 1 E2E test (PROJ-OPEN-002 - project "PrivateProject" is visible to unauthorized user, may need proper test setup with permissions)
+**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + 1 backend dotenv fix + 5 Open Project Editor test fixes
 **Known Issues:**
-- None
+- PROJ-OPEN-002: Test expects "PrivateProject" to not be visible to user@example.com, but project is visible. This may indicate:
+  1. Test setup incomplete (project needs to be created by owner and permissions need to be verified)
+  2. Permission system may not be filtering projects correctly in the UI
+  3. Test may need to create the project and explicitly deny permissions before testing
