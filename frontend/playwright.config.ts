@@ -37,7 +37,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd ../backend && npm run dev',
-      url: 'http://localhost:8000/api/v1/auth/login',
+      url: 'http://localhost:8000/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       stdout: 'ignore',

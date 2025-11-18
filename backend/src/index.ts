@@ -58,6 +58,11 @@ async function buildServer() {
     reply.header('Content-Security-Policy', "default-src 'self'");
   });
 
+  // Health check endpoint for webServer checks
+  fastify.get('/health', async (_request, reply) => {
+    reply.send({ status: 'ok' });
+  });
+
   // Register routes
   await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
   await fastify.register(userRoutes, { prefix: '/api/v1/users' });

@@ -238,6 +238,12 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         include: {
+          owner: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
           functions: {
             include: {
               bricks: {
@@ -338,11 +344,20 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: f.createdAt.toISOString(),
           updatedAt: f.updatedAt.toISOString(),
         })),
-        permissions: project.permissions.map((p) => ({
-          userId: p.userId,
-          userEmail: p.user.email,
-          createdAt: p.createdAt.toISOString(),
-        })),
+        permissions: [
+          // Include owner as first permission
+          {
+            userId: project.owner.id,
+            userEmail: project.owner.email,
+            createdAt: project.createdAt.toISOString(),
+          },
+          // Include additional permissions
+          ...project.permissions.map((p) => ({
+            userId: p.userId,
+            userEmail: p.user.email,
+            createdAt: p.createdAt.toISOString(),
+          })),
+        ],
         databases: allDatabases.map((d) => ({
           id: d.id,
           name: d.name,

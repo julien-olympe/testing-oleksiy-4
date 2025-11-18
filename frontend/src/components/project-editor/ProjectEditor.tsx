@@ -31,15 +31,26 @@ export const ProjectEditor: React.FC = () => {
 
     try {
       setLoading(true);
+      setError(null);
       const editorData = await apiService.getProjectEditor(id);
       setData(editorData);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        setError(axiosError.response?.data?.error?.message || 'Failed to load project editor');
+        const axiosError = err as { response: { status: number; data: { error: { message: string } } } };
+        const status = axiosError.response?.status;
+        const errorMessage = axiosError.response?.data?.error?.message || 'Failed to load project editor';
+        
+        // Navigate away on authorization/authentication errors
+        if (status === 401 || status === 403) {
+          navigate('/home');
+          return;
+        }
+        
+        setError(errorMessage);
       } else {
         setError('Failed to load project editor');
       }
+      setData(null); // Ensure data is cleared on error
     } finally {
       setLoading(false);
     }

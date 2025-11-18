@@ -797,3 +797,160 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied
 **Known Issues:**
 - FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
+
+---
+
+## 6. Section 08 - Open Project Editor E2E Tests
+
+### 6.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/08-open-project-editor.md`  
+**Test File Created:** `/workspace/frontend/e2e/08-open-project-editor.spec.ts`
+
+### 6.2 Test Coverage
+
+The section 08 tests cover the following scenarios:
+1. PROJ-OPEN-001: Open Project Editor - Positive Case
+2. PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+3. PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+4. PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+
+### 6.3 Execution Status
+
+**Status:** ✅ PASSED (4/4 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test 08-open-project-editor.spec.ts --reporter=list`  
+**Test Duration:** ~43.4 seconds  
+**Overall Result:** 4 tests passed, 0 tests failed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 8000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from Playwright config
+
+### 6.4 Detailed Test Results
+
+#### Test 1: PROJ-OPEN-001 - Open Project Editor - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~13.7 seconds
+- **Details:** 
+  - Successfully created project and opened project editor
+  - Verified settings icon in top-right corner
+  - Verified header with tabs: Project, Permissions, Database
+  - Verified Project tab is active by default
+  - Verified left side panel shows search bar and brick list
+  - Verified "Function" brick is visible in the brick list
+  - Verified center area shows function list
+  - Verified all three tabs are visible
+  - No error messages displayed
+
+#### Test 2: PROJ-OPEN-002 - Open Project Editor - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Duration:** ~17.3 seconds
+- **Details:**
+  - Successfully created private project as owner
+  - Successfully logged out and logged in as different user without permission
+  - Verified unauthorized user cannot access project editor
+  - Project editor correctly redirects to home on authorization error
+  - Permission checking working correctly
+
+#### Test 3: PROJ-OPEN-003 - Open Project Editor - Verify Project Data Loading
+- **Status:** ✅ PASSED
+- **Duration:** ~23.4 seconds
+- **Details:**
+  - Successfully opened project editor
+  - Verified Project tab displays function list correctly
+  - Created and verified function appears in list
+  - Verified Permissions tab displays users with permissions (including owner)
+  - Verified Database tab displays database types and instances
+  - All project data loads correctly
+
+#### Test 4: PROJ-OPEN-004 - Open Project Editor - Verify Tab Navigation
+- **Status:** ✅ PASSED
+- **Duration:** ~14.0 seconds
+- **Details:**
+  - Successfully opened project editor with Project tab active
+  - Verified left side panel brick list is visible on Project tab
+  - Successfully navigated to Permissions tab
+  - Verified Permissions tab is active and brick list is hidden
+  - Successfully navigated to Database tab
+  - Verified Database tab is active and brick list is hidden
+  - Successfully navigated back to Project tab
+  - Verified Project tab is active and brick list is visible again
+
+### 6.5 Issues Fixed During Test Execution
+
+1. **Prisma Client Initialization:**
+   - **Issue:** Prisma client not initialized, preventing backend from starting
+   - **Fix:** Ran `npx prisma generate` successfully after network issues resolved
+   - **Result:** Backend now starts correctly
+
+2. **Playwright Browser Installation:**
+   - **Issue:** Chromium browser not installed for Playwright
+   - **Fix:** Ran `npx playwright install chromium`
+   - **Result:** All browsers installed and tests can run
+
+3. **Backend Health Check Endpoint:**
+   - **Issue:** Playwright webServer checking POST endpoint `/api/v1/auth/login` which doesn't respond to GET
+   - **Fix:** Added GET `/health` endpoint to backend for webServer health checks
+   - **Result:** Backend webServer now starts correctly
+
+4. **Frontend Port Configuration:**
+   - **Issue:** Vite configured to run on port 5173, but Playwright expects port 3000
+   - **Fix:** Updated `vite.config.ts` to use port 3000 and fixed API proxy to point to backend port 8000
+   - **Result:** Frontend webServer now starts correctly on expected port
+
+5. **Backend Permissions Response:**
+   - **Issue:** Project editor endpoint not including owner in permissions list
+   - **Fix:** Updated `/workspace/backend/src/routes/projects.ts` to include owner as first permission in response
+   - **Result:** Permissions tab now correctly displays owner in permissions list
+
+6. **Frontend Authorization Error Handling:**
+   - **Issue:** Project editor not handling 401/403 errors correctly, allowing unauthorized access
+   - **Fix:** Updated `/workspace/frontend/src/components/project-editor/ProjectEditor.tsx` to navigate away on authorization errors
+   - **Result:** Unauthorized users are now redirected to home page when trying to access projects
+
+### 6.6 Code Changes Applied
+
+1. **Backend (`/workspace/backend/src/index.ts`):**
+   - Added GET `/health` endpoint for webServer health checks
+
+2. **Backend (`/workspace/backend/src/routes/projects.ts`):**
+   - Updated project editor endpoint to include `owner` in Prisma query
+   - Modified permissions response to include owner as first permission entry
+
+3. **Frontend (`/workspace/frontend/vite.config.ts`):**
+   - Changed server port from 5173 to 3000
+   - Updated API proxy target from `http://localhost:3000` to `http://localhost:8000`
+
+4. **Frontend (`/workspace/frontend/src/components/project-editor/ProjectEditor.tsx`):**
+   - Added navigation to home page on 401/403 authorization errors
+   - Added `setData(null)` on error to ensure data is cleared
+   - Improved error handling with status code checking
+
+5. **Frontend (`/workspace/frontend/playwright.config.ts`):**
+   - Updated backend webServer URL from `/api/v1/auth/login` to `/health`
+
+### 6.7 Test Execution Summary
+
+**Total Tests:** 4  
+**Passed:** 4 ✅  
+**Failed:** 0  
+**Skipped:** 0  
+**Success Rate:** 100%
+
+**Key Achievements:**
+- ✅ All test scenarios from specification implemented
+- ✅ All tests passing consistently
+- ✅ Proper error handling for unauthorized access
+- ✅ All UI elements verified correctly
+- ✅ Tab navigation working as expected
+- ✅ Project data loading verified across all tabs
+
+---
+
+**Known Issues:**
+- FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
