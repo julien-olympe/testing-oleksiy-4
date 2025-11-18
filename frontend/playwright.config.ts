@@ -18,7 +18,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:5173',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Take screenshot on failure */
@@ -37,24 +37,24 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd ../backend && npm run dev',
-      url: 'http://localhost:8000/api/v1/auth/login',
+      url: 'http://localhost:3000/api/v1/auth/login',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       stdout: 'ignore',
       stderr: 'pipe',
       env: {
         NODE_ENV: 'development',
-        PORT: '8000',
+        PORT: '3000',
         DATABASE_URL: 'postgresql://tu_phmhhk:qM4y8EBHYxGxRX4SEqd6K8CsQMR7jL7HMxJC6tEB@37.156.46.78:43971/test_db_vk11wc',
         JWT_SECRET: 'test-jwt-secret-key-min-256-bits-required-for-production-use-change-this-in-production-environment-please',
         JWT_REFRESH_SECRET: 'test-jwt-refresh-secret-key-min-256-bits-required-for-production-use-change-this-in-production-environment-please',
-        CORS_ORIGIN: 'http://localhost:3000',
+        CORS_ORIGIN: 'http://localhost:5173',
         LOG_LEVEL: 'info',
       },
     },
     {
       command: 'npm run dev',
-      url: 'http://localhost:3000',
+      url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       stdout: 'ignore',
