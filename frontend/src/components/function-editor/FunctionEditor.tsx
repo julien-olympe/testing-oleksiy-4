@@ -285,9 +285,22 @@ export const FunctionEditor: React.FC = () => {
     }
   };
 
+  const getBrickLabel = (brickType: BrickType): string => {
+    switch (brickType) {
+      case 'ListInstancesByDB':
+        return 'List instances by DB name';
+      case 'GetFirstInstance':
+        return 'Get first instance';
+      case 'LogInstanceProps':
+        return 'Log instance props';
+      default:
+        return brickType;
+    }
+  };
+
   const availableBricks: BrickType[] = ['ListInstancesByDB', 'GetFirstInstance', 'LogInstanceProps'];
   const filteredBricks = availableBricks.filter((brick) =>
-    brick.toLowerCase().includes(searchTerm.toLowerCase())
+    getBrickLabel(brick).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -347,7 +360,7 @@ export const FunctionEditor: React.FC = () => {
                 draggable
                 onDragStart={(e) => handleDragStart(e, brick)}
               >
-                {brick}
+                {getBrickLabel(brick)}
               </div>
             ))}
           </div>

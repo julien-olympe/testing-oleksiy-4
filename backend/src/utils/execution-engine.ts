@@ -1,5 +1,6 @@
 import { prisma } from '../db/client';
 import { BusinessLogicError } from './errors';
+import { Prisma } from '@prisma/client';
 
 interface BrickOutput {
   [outputName: string]: unknown;
@@ -40,9 +41,53 @@ export class ExecutionEngine {
         },
       },
     });
+    
+    // Debug: Log raw configuration from database
+    if (func && func.bricks.length > 0) {
+      console.log(`[ExecutionEngine] Raw configurations from database:`);
+      for (const brick of func.bricks) {
+        console.log(`[ExecutionEngine] Brick ${brick.id} (${brick.type}):`, JSON.stringify(brick.configuration));
+        console.log(`[ExecutionEngine] Configuration type:`, typeof brick.configuration);
+        console.log(`[ExecutionEngine] Configuration is array:`, Array.isArray(brick.configuration));
+      }
+    }
 
     if (!func || func.bricks.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
+    }
+
+    // Normalize configurations (ensure they're always plain objects, not null, arrays, or other types)
+    for (const brick of func.bricks) {
+      // Handle Prisma JsonValue type - ensure it's a plain object
+      // Prisma returns JsonValue which can be JsonObject, JsonArray, string, number, boolean, or null
+      if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
+        // If it's null, undefined, or not an object, set to empty object
+        brick.configuration = {} as Prisma.JsonObject;
+      } else {
+        // Prisma already returns JsonObject as a plain object, so we can use it directly
+        // But we'll ensure it's properly typed as JsonObject
+        // No need to JSON.parse(JSON.stringify()) as it's already a plain object from Prisma
+        brick.configuration = brick.configuration as Prisma.JsonObject;
+      }
+      // Log configuration for debugging
+      console.log(`[ExecutionEngine] Normalized configuration for brick ${brick.id} (${brick.type}):`, JSON.stringify(brick.configuration));
+      console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(brick.configuration as Prisma.JsonObject));
+    }
+
+    // Log loaded function data for debugging
+    console.log(`[ExecutionEngine] Loaded function: ${func.id} with ${func.bricks.length} bricks`);
+    for (const brick of func.bricks) {
+      console.log(`[ExecutionEngine] Brick ${brick.id} (${brick.type}):`);
+      console.log(`  - connectionsFrom: ${brick.connectionsFrom.length}`);
+      console.log(`  - connectionsTo: ${brick.connectionsTo.length}`);
+      console.log(`  - configuration:`, JSON.stringify(brick.configuration));
+      if (brick.connectionsTo.length > 0) {
+        console.log(`  - connectionsTo details:`, JSON.stringify(brick.connectionsTo.map(c => ({
+          fromBrickId: c.fromBrickId,
+          fromOutputName: c.fromOutputName,
+          toInputName: c.toInputName,
+        }))));
+      }
     }
 
     // Validate function structure
@@ -96,18 +141,55 @@ export class ExecutionEngine {
     };
   }
 
-  private static validateFunction(bricks: Array<{ id: string; type: string; configuration: unknown }>): void {
+  private static validateFunction(bricks: Array<{ id: string; type: string; configuration: Prisma.JsonValue }>): void {
     // Check for required inputs
     for (const brick of bricks) {
       if (brick.type === 'ListInstancesByDB') {
-        const config = brick.configuration as { databaseName?: string };
-        if (!config || !config.databaseName || typeof config.databaseName !== 'string') {
+        console.log(`[ExecutionEngine] Validating ListInstancesByDB brick: ${brick.id}`);
+        console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
+        console.log(`[ExecutionEngine] Configuration type:`, typeof brick.configuration);
+        console.log(`[ExecutionEngine] Configuration is array:`, Array.isArray(brick.configuration));
+        
+        // Ensure configuration is a plain object
+        if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - configuration is not a valid object`);
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
+            reason: 'Configuration is not a valid object',
+            configuration: brick.configuration,
+            configurationType: typeof brick.configuration,
           });
         }
+        
+        // Convert to plain object to ensure proper property access
+        // After normalization, configuration should be Prisma.JsonObject
+        const config = brick.configuration as Prisma.JsonObject;
+        const databaseName = config.databaseName;
+        
+        console.log(`[ExecutionEngine] databaseName value:`, databaseName);
+        console.log(`[ExecutionEngine] databaseName type:`, typeof databaseName);
+        console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(config));
+        
+        // Handle case where databaseName might be a JsonValue (string, number, etc.)
+        const databaseNameStr = typeof databaseName === 'string' ? databaseName : 
+                                databaseName !== null && databaseName !== undefined ? String(databaseName) : null;
+        
+        if (!databaseNameStr || databaseNameStr.trim() === '') {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - databaseName is missing or empty`);
+          console.log(`[ExecutionEngine] Full configuration object:`, JSON.stringify(config, null, 2));
+          throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
+            brickId: brick.id,
+            brickType: brick.type,
+            missingInputs: ['databaseName'],
+            reason: `databaseName is ${databaseName === undefined ? 'undefined' : databaseName === null ? 'null' : `'${String(databaseName)}' (type: ${typeof databaseName})`}`,
+            configuration: brick.configuration,
+            configKeys: Object.keys(config),
+            fullConfig: config,
+          });
+        }
+        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${databaseNameStr}`);
       }
     }
 
@@ -179,12 +261,17 @@ export class ExecutionEngine {
     brick: {
       id: string;
       type: string;
-      configuration: unknown;
+      configuration: Prisma.JsonValue;
       connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
+    // Log brick execution details for debugging
+    console.log(`[ExecutionEngine] Executing brick: ${brick.type} (${brick.id})`);
+    console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
+    console.log(`[ExecutionEngine] ConnectionsTo:`, JSON.stringify(brick.connectionsTo));
+    
     switch (brick.type) {
       case 'ListInstancesByDB':
         return this.executeListInstancesByDB(brick, context, projectId);
@@ -201,12 +288,25 @@ export class ExecutionEngine {
   }
 
   private static async executeListInstancesByDB(
-    brick: { id: string; configuration: unknown },
+    brick: { id: string; configuration: Prisma.JsonValue },
     _context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
-    const config = brick.configuration as { databaseName?: string };
-    const databaseName = config?.databaseName;
+    // Configuration should already be normalized to a plain object by executeFunction
+    // After normalization, it should be Prisma.JsonObject
+    if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
+      throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
+        brickId: brick.id,
+        brickType: 'ListInstancesByDB',
+        missingInputs: ['databaseName'],
+        reason: 'Configuration is not a valid object',
+      });
+    }
+    const config = brick.configuration as Prisma.JsonObject;
+    const databaseNameValue = config.databaseName;
+    // Handle case where databaseName might be a JsonValue (string, number, etc.)
+    const databaseName = typeof databaseNameValue === 'string' ? databaseNameValue : 
+                        databaseNameValue !== null && databaseNameValue !== undefined ? String(databaseNameValue) : undefined;
 
     if (!databaseName) {
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
@@ -293,24 +393,44 @@ export class ExecutionEngine {
     context: ExecutionContext
   ): Promise<ExecutionResult> {
     // Find input connection
+    console.log(`[ExecutionEngine] GetFirstInstance - Looking for 'List' input connection`);
+    console.log(`[ExecutionEngine] GetFirstInstance - Available connectionsTo:`, JSON.stringify(brick.connectionsTo));
     const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'List');
     if (!inputConnection) {
+      console.log(`[ExecutionEngine] GetFirstInstance - No 'List' input connection found`);
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,
         brickType: 'GetFirstInstance',
         missingInputs: ['List'],
+        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 
     const sourceOutput = context.brickOutputs.get(inputConnection.fromBrickId);
     if (!sourceOutput) {
+      console.log(`[ExecutionEngine] GetFirstInstance - Source brick output not found for fromBrickId: ${inputConnection.fromBrickId}`);
+      console.log(`[ExecutionEngine] GetFirstInstance - Available brick outputs:`, Array.from(context.brickOutputs.keys()));
       throw new BusinessLogicError('EXECUTION_FAILED', 'Source brick output not found', {
         brickId: brick.id,
         brickType: 'GetFirstInstance',
+        fromBrickId: inputConnection.fromBrickId,
+        availableBrickIds: Array.from(context.brickOutputs.keys()),
       });
     }
 
-    const list = sourceOutput[inputConnection.fromOutputName] as Array<{ id: string; values: Record<string, string> }> | undefined;
+    console.log(`[ExecutionEngine] GetFirstInstance - Source output keys:`, Object.keys(sourceOutput));
+    console.log(`[ExecutionEngine] GetFirstInstance - Looking for key: ${inputConnection.fromOutputName}`);
+    
+    // Try to get list from source output using fromOutputName
+    // Also try 'list' as fallback (in case connection was created with different output name)
+    let list = sourceOutput[inputConnection.fromOutputName] as Array<{ id: string; values: Record<string, string> }> | undefined;
+    if (!list && inputConnection.fromOutputName !== 'list') {
+      // Try 'list' as fallback
+      list = sourceOutput['list'] as Array<{ id: string; values: Record<string, string> }> | undefined;
+      if (list) {
+        console.log(`[ExecutionEngine] GetFirstInstance - Found list using fallback key 'list'`);
+      }
+    }
 
     if (!Array.isArray(list) || list.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'List is empty, cannot get first instance', {
@@ -323,7 +443,7 @@ export class ExecutionEngine {
       brickId: brick.id,
       brickType: 'GetFirstInstance',
       output: {
-        instance: list[0],
+        DB: list[0], // Frontend expects output name 'DB'
       },
     });
   }
@@ -335,30 +455,55 @@ export class ExecutionEngine {
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
-    // Find input connection
-    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Instance');
+    // Find input connection (frontend uses 'Object' as input name)
+    console.log(`[ExecutionEngine] LogInstanceProps - Looking for 'Object' or 'Instance' input connection`);
+    console.log(`[ExecutionEngine] LogInstanceProps - Available connectionsTo:`, JSON.stringify(brick.connectionsTo));
+    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Object' || c.toInputName === 'Instance');
     if (!inputConnection) {
+      console.log(`[ExecutionEngine] LogInstanceProps - No 'Object' or 'Instance' input connection found`);
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
-        missingInputs: ['Instance'],
+        missingInputs: ['Object'],
+        availableConnections: brick.connectionsTo.map(c => ({ toInputName: c.toInputName, fromOutputName: c.fromOutputName })),
       });
     }
 
     const sourceOutput = context.brickOutputs.get(inputConnection.fromBrickId);
     if (!sourceOutput) {
+      console.log(`[ExecutionEngine] LogInstanceProps - Source brick output not found for fromBrickId: ${inputConnection.fromBrickId}`);
+      console.log(`[ExecutionEngine] LogInstanceProps - Available brick outputs:`, Array.from(context.brickOutputs.keys()));
       throw new BusinessLogicError('EXECUTION_FAILED', 'Source brick output not found', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
+        fromBrickId: inputConnection.fromBrickId,
+        availableBrickIds: Array.from(context.brickOutputs.keys()),
       });
     }
 
-    const instance = sourceOutput[inputConnection.fromOutputName] as { id: string; values: Record<string, string> } | undefined;
+    console.log(`[ExecutionEngine] LogInstanceProps - Source output keys:`, Object.keys(sourceOutput));
+    console.log(`[ExecutionEngine] LogInstanceProps - Looking for key: ${inputConnection.fromOutputName}`);
+    
+    // Try to get instance from source output using fromOutputName
+    // Also try 'DB' as fallback (in case connection was created with old output name)
+    let instance = sourceOutput[inputConnection.fromOutputName] as { id: string; values: Record<string, string> } | undefined;
+    if (!instance && inputConnection.fromOutputName !== 'DB') {
+      // Try 'DB' as fallback
+      instance = sourceOutput['DB'] as { id: string; values: Record<string, string> } | undefined;
+      if (instance) {
+        console.log(`[ExecutionEngine] LogInstanceProps - Found instance using fallback key 'DB'`);
+      }
+    }
 
     if (!instance) {
+      console.log(`[ExecutionEngine] LogInstanceProps - Instance not found. Source output:`, JSON.stringify(sourceOutput));
+      console.log(`[ExecutionEngine] LogInstanceProps - fromOutputName: ${inputConnection.fromOutputName}`);
       throw new BusinessLogicError('EXECUTION_FAILED', 'Instance not found in input', {
         brickId: brick.id,
         brickType: 'LogInstanceProps',
+        fromOutputName: inputConnection.fromOutputName,
+        sourceOutputKeys: Object.keys(sourceOutput),
+        sourceOutput: sourceOutput,
       });
     }
 

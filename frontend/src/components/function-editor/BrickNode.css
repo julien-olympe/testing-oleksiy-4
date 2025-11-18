@@ -5,6 +5,7 @@
   padding: 12px;
   min-width: 200px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
 }
 
 .brick-node-header {
@@ -30,6 +31,7 @@
   align-items: center;
   gap: 8px;
   position: relative;
+  pointer-events: auto;
 }
 
 .brick-input-label,
@@ -45,6 +47,7 @@
   background: #667eea;
   border: 2px solid white;
   border-radius: 50%;
+  pointer-events: auto;
 }
 
 .database-select-button {
@@ -56,6 +59,7 @@
   cursor: pointer;
   font-size: 11px;
   transition: background-color 0.2s;
+  pointer-events: auto;
 }
 
 .database-select-button:hover {
@@ -73,6 +77,7 @@
   z-index: 1000;
   margin-top: 4px;
   min-width: 200px;
+  pointer-events: auto;
 }
 
 .database-option {
@@ -88,4 +93,9 @@
 
 .database-option:hover {
   background-color: #f5f5f5;
+}
+
+/* Ensure React Flow handles are interactive */
+.react-flow__handle {
+  pointer-events: auto !important;
 }
