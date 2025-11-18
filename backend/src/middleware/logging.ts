@@ -5,7 +5,7 @@ const startTimes = new WeakMap<FastifyRequest, number>();
 
 export async function loggingMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ): Promise<void> {
   startTimes.set(request, Date.now());
 }

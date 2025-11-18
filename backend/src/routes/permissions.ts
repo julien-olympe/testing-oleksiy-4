@@ -52,7 +52,7 @@ export async function permissionRoutes(fastify: FastifyInstance): Promise<void> 
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { projectId: string }).projectId;
-      const { email } = request.body;
+      const { email } = request.body as { email: string };
 
       validateUUID(projectId, 'projectId');
 
