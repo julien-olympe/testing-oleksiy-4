@@ -512,9 +512,207 @@ cd /workspace/frontend && npx playwright test e2e/logout-user.spec.ts --reporter
 
 ---
 
-## 6. Issues Found and Fixes Applied
+## 6. Create Project End-to-End Tests
 
-### 6.1 TypeScript Strict Mode Errors
+### 6.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/05-create-project.md`  
+**Test IDs:** PROJ-CREATE-001, PROJ-CREATE-002, PROJ-CREATE-003, PROJ-CREATE-004  
+**Test Names:** 
+- PROJ-CREATE-001: Create Project - Positive Case
+- PROJ-CREATE-002: Create Project - Negative Case - Drag to Invalid Location
+- PROJ-CREATE-003: Verify Multiple Projects Can Be Created
+- PROJ-CREATE-004: Verify Project Persistence After Page Refresh
+
+### 6.2 Test Coverage
+
+The create project tests cover the following use cases:
+1. **PROJ-CREATE-001:** Complete positive flow for creating a project via drag-and-drop
+2. **PROJ-CREATE-002:** Negative case - preventing project creation when dragging to invalid locations
+3. **PROJ-CREATE-003:** Verification that multiple projects can be created successfully
+4. **PROJ-CREATE-004:** Verification that projects persist after page refresh
+
+### 6.3 Execution Status
+
+**Status:** ✅ PASSED (4/4 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/05-create-project.spec.ts --reporter=list`  
+**Test Duration:** ~18.4 seconds (all tests)  
+**Overall Result:** 4 tests passed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+- ✅ Prisma Client: Generated and initialized
+
+**Test Configuration:**
+- Playwright config automatically starts backend and frontend services
+- Chromium browser used for testing
+- Test file created: `/workspace/frontend/e2e/05-create-project.spec.ts`
+
+### 6.4 Detailed Test Results
+
+#### Test PROJ-CREATE-001: Create Project - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** 4.8-4.9 seconds
+- **Test Steps Covered:**
+  1. ✅ Verify user is on Home Screen
+  2. ✅ Verify left side panel is displayed with search bar and brick list
+  3. ✅ Verify "Project" brick is visible in the brick list on the left side
+  4. ✅ Verify center and right area displays project list (may be empty)
+  5. ✅ Drag "Project" brick from left side brick list
+  6. ✅ Drag the brick over the center project list area
+  7. ✅ Drop "Project" brick in the project list area
+  8. ✅ Verify drop action is detected
+  9. ✅ Verify a new project is created
+  10. ✅ Verify project is created with default name "New Project"
+  11. ✅ Verify project is assigned to the logged-in user as owner
+  12. ✅ Verify project appears in the project list on Home Screen
+  13. ✅ Verify project is displayed immediately after creation
+  14. ✅ Verify no error messages are displayed
+- **Expected Results:** All verified ✅
+  - Home Screen is displayed correctly ✅
+  - "Project" brick is visible and draggable in the brick list ✅
+  - Drag and drop action is successful ✅
+  - New project is created successfully ✅
+  - Project has default name "New Project" ✅
+  - Project is assigned to the current user ✅
+  - Project appears in the project list immediately ✅
+  - Project is persisted in the system ✅
+  - No error messages displayed ✅
+
+#### Test PROJ-CREATE-002: Create Project - Negative Case - Drag to Invalid Location
+- **Status:** ✅ PASSED
+- **Duration:** 3.5-3.8 seconds
+- **Test Steps Covered:**
+  1. ✅ Verify user is on Home Screen
+  2. ✅ Verify "Project" brick is visible in the brick list
+  3. ✅ Drag "Project" brick from left side brick list
+  4. ✅ Drag the brick to an invalid drop location (search bar)
+  5. ✅ Release/drop the brick in the invalid location
+  6. ✅ Verify drop is not accepted in invalid location
+  7. ✅ Verify no project is created
+  8. ✅ Verify project list remains unchanged
+  9. ✅ Verify brick returns to original position or drag is cancelled
+  10. ✅ Verify no error messages are displayed (or appropriate feedback is shown)
+- **Expected Results:** All verified ✅
+  - Drag action is initiated ✅
+  - Drop in invalid location is not accepted ✅
+  - No project is created ✅
+  - Project list remains unchanged ✅
+  - Brick drag is cancelled or brick returns to list ✅
+  - User receives appropriate feedback (visual or message) ✅
+
+#### Test PROJ-CREATE-003: Verify Multiple Projects Can Be Created
+- **Status:** ✅ PASSED
+- **Duration:** 3.4-5.3 seconds
+- **Test Steps Covered:**
+  1. ✅ Verify user is on Home Screen
+  2. ✅ Verify existing project(s) are displayed in project list
+  3. ✅ Count the number of projects in the list
+  4. ✅ Drag "Project" brick from left side brick list to project list area
+  5. ✅ Drop "Project" brick
+  6. ✅ Verify a new project is created
+  7. ✅ Verify new project appears in the project list
+  8. ✅ Verify total number of projects has increased by one
+  9. ✅ Verify all projects are displayed in the list
+  10. ✅ Verify each project has a unique identifier or name
+  11. ✅ Verify no error messages are displayed
+- **Expected Results:** All verified ✅
+  - Multiple projects can be created ✅
+  - Each project is created successfully ✅
+  - All projects are displayed in the project list ✅
+  - Projects are properly distinguished (by name or identifier) ✅
+  - No conflicts occur between projects ✅
+
+#### Test PROJ-CREATE-004: Verify Project Persistence After Page Refresh
+- **Status:** ✅ PASSED
+- **Duration:** 7.2-9.2 seconds
+- **Test Steps Covered:**
+  1. ✅ Verify user is on Home Screen
+  2. ✅ Drag "Project" brick from left side brick list to project list area
+  3. ✅ Drop "Project" brick
+  4. ✅ Verify project "New Project" is created and displayed
+  5. ✅ Refresh the browser page (F5 or browser refresh button)
+  6. ✅ Wait for page to reload
+  7. ✅ Verify user remains logged in (session persists)
+  8. ✅ Verify Home Screen is displayed after refresh
+  9. ✅ Verify project "New Project" is still displayed in the project list
+  10. ✅ Verify project data is persisted in the system
+- **Expected Results:** All verified ✅
+  - Project is created successfully ✅
+  - After page refresh, project still exists ✅
+  - Project is displayed in the project list after refresh ✅
+  - Project data is persisted in the database/system ✅
+  - User session is maintained ✅
+
+### 6.5 Terminal Output Summary
+
+**Test Execution Command:**
+```bash
+cd /workspace/frontend && npx playwright test e2e/05-create-project.spec.ts --reporter=list
+```
+
+**Key Output:**
+- Services started successfully via Playwright webServer configuration
+- Backend: Running on http://localhost:3000
+- Frontend: Running on http://localhost:5173
+- Browser: Chromium 141.0.7390.37 (playwright build v1194)
+- Test duration: ~18.4 seconds (all 4 tests)
+- **Result:** 4 tests passed (PROJ-CREATE-001, PROJ-CREATE-002, PROJ-CREATE-003, PROJ-CREATE-004)
+
+**Error Messages:**
+- None ✅
+
+**Test Artifacts Generated:**
+- No failures, so no error artifacts generated
+
+### 6.6 Test Implementation Notes
+
+**Test File Created:**
+- `/workspace/frontend/e2e/05-create-project.spec.ts` - New test file created based on specifications
+
+**Test Structure:**
+- Uses Playwright test framework
+- Follows the same patterns as critical-path.spec.ts and logout-user.spec.ts
+- Uses test steps for better organization and reporting
+- Properly handles async operations and waits
+- Includes beforeEach hook for user authentication
+
+**Key Features Tested:**
+1. Drag-and-drop functionality for project creation
+2. Project creation with default naming
+3. User ownership assignment
+4. Invalid drop location handling
+5. Multiple project creation
+6. Project persistence after page refresh
+7. Session persistence
+
+**Environment Setup Issues Resolved:**
+1. **Prisma Client Not Generated:**
+   - Issue: Backend failed to start due to missing Prisma client
+   - Fix: Ran `npx prisma generate` in backend directory
+   - Impact: Backend service now starts correctly
+
+2. **Frontend Dependencies:**
+   - Issue: Frontend node_modules had corruption issues
+   - Fix: Reinstalled frontend dependencies with `npm install --legacy-peer-deps`
+   - Impact: Frontend service now starts correctly
+
+**No Test Failures:**
+- All tests passed on first execution
+- No fixes or modifications needed
+- Implementation matches specifications exactly
+
+---
+
+## 7. Issues Found and Fixes Applied
+
+### 7.1 TypeScript Strict Mode Errors
 
 **Total Issues Fixed:** 33
 
@@ -527,7 +725,7 @@ cd /workspace/frontend && npx playwright test e2e/logout-user.spec.ts --reporter
 
 **All issues resolved** ✅
 
-### 6.2 Missing Dependencies
+### 7.2 Missing Dependencies
 
 **Issues:**
 - `@fastify/cookie` not installed → Installed
@@ -536,7 +734,7 @@ cd /workspace/frontend && npx playwright test e2e/logout-user.spec.ts --reporter
 
 **All resolved** ✅
 
-### 6.3 Test Configuration
+### 7.3 Test Configuration
 
 **Issues:**
 - Jest types not recognized → Added to `tsconfig.json`
@@ -545,7 +743,7 @@ cd /workspace/frontend && npx playwright test e2e/logout-user.spec.ts --reporter
 
 **All resolved** ✅
 
-### 6.4 E2E Test Issues and Fixes
+### 7.4 E2E Test Issues and Fixes
 
 **Total Issues Fixed:** 4
 
@@ -734,7 +932,12 @@ The comprehensive test execution has successfully:
     - Fix Applied: Updated CSS to allow pointer-events on handles
     - Test updated to use dragTo() method
     - Step 13 now passes consistently ✅
-12. Expand test coverage for all API endpoints
+12. ✅ **COMPLETED:** Create Project E2E Tests (05-create-project.md)
+    - Created test file: `/workspace/frontend/e2e/05-create-project.spec.ts`
+    - All 4 tests passing: PROJ-CREATE-001, PROJ-CREATE-002, PROJ-CREATE-003, PROJ-CREATE-004
+    - Tests cover: positive case, negative case, multiple projects, persistence
+    - Environment setup: Prisma client generated, dependencies installed
+13. Expand test coverage for all API endpoints
 
 ---
 
@@ -787,6 +990,7 @@ cd /workspace/frontend && npm run test:e2e
 20. `/workspace/backend/src/routes/bricks.ts` - Fixed route paths to include `/bricks/` prefix
 21. `/workspace/frontend/src/components/function-editor/FunctionEditor.tsx` - Added formatted brick labels in sidebar
 22. `/workspace/frontend/e2e/logout-user.spec.ts` - Created (new file) - Logout user E2E tests (LOGOUT-001, LOGOUT-002)
+23. `/workspace/frontend/e2e/05-create-project.spec.ts` - Created (new file) - Create project E2E tests (PROJ-CREATE-001, PROJ-CREATE-002, PROJ-CREATE-003, PROJ-CREATE-004)
 
 ---
 
@@ -794,10 +998,11 @@ cd /workspace/frontend && npm run test:e2e
 **Total Execution Time:** ~20 minutes  
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
-- E2E Tests: 3 (passed - 15/15 steps/tests total)
+- E2E Tests: 7 (passed - 19/19 steps/tests total)
   - Critical Path: 1 test (13/13 steps passing)
   - Logout User: 2 tests (2/2 tests passing)
-**Tests Passed:** 3 unit tests + 15 E2E steps/tests  
+  - Create Project: 4 tests (4/4 tests passing)
+**Tests Passed:** 3 unit tests + 19 E2E steps/tests  
 **Tests Failed:** 0 unit tests + 0 E2E steps/tests
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
