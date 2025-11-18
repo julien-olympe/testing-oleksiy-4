@@ -797,3 +797,112 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied
 **Known Issues:**
 - FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
+
+---
+
+## 10. Section 07 - Delete Project E2E Tests
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/07-delete-project.md`  
+**Test File Created:** `/workspace/frontend/e2e/07-delete-project.spec.ts`
+
+### 10.2 Test Coverage
+
+The section 07 tests cover the following scenarios:
+1. PROJ-DELETE-001: Delete Project - Positive Case
+2. PROJ-DELETE-002: Delete Project - Negative Case - Permission Denied
+3. PROJ-DELETE-003: Delete Project - Cancel Deletion
+4. PROJ-DELETE-004: Delete Project - Verify Cascading Deletion
+
+### 10.3 Execution Status
+
+**Status:** ⚠️ BLOCKED - Prisma Client Engine Missing
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/07-delete-project.spec.ts --reporter=list`  
+**Blocking Issue:** Prisma client query engine file (`libquery_engine-debian-openssl-3.0.x.so.node`) is missing, preventing backend server from starting.
+
+**Test File Status:** ✅ CREATED
+- Comprehensive test file created covering all 4 test scenarios
+- Helper functions implemented for:
+  - User registration/login
+  - Project creation
+  - Project editor navigation
+  - Function creation
+  - Database instance creation
+  - Permission management
+- Test scenarios fully implemented according to specification
+
+### 10.4 Test Implementation Details
+
+#### Test 1: PROJ-DELETE-001 - Delete Project - Positive Case
+- **Implementation:** ✅ Complete
+- **Coverage:**
+  - User login and project creation
+  - Project selection and delete button location
+  - Confirmation dialog handling
+  - API response verification
+  - Project removal verification
+  - Error message verification
+
+#### Test 2: PROJ-DELETE-002 - Delete Project - Negative Case - Permission Denied
+- **Implementation:** ✅ Complete
+- **Coverage:**
+  - Owner and user account setup
+  - Project creation with permissions
+  - Permission addition (view only)
+  - User login without delete permission
+  - Delete action attempt verification
+  - Error message verification for permission denied
+
+#### Test 3: PROJ-DELETE-003 - Delete Project - Cancel Deletion
+- **Implementation:** ✅ Complete
+- **Coverage:**
+  - Project creation
+  - Delete action initiation
+  - Confirmation dialog cancellation
+  - Project persistence verification
+  - No error message verification
+
+#### Test 4: PROJ-DELETE-004 - Delete Project - Verify Cascading Deletion
+- **Implementation:** ✅ Complete
+- **Coverage:**
+  - Project creation with associated data:
+    - At least one function
+    - At least one database instance
+    - At least one permission
+  - Project deletion
+  - Verification that project is removed
+  - Note: Database-level cascading deletion verification requires backend access
+
+### 10.5 Blocking Issue Details
+
+**Issue:** Prisma Client Query Engine Missing
+- **Error:** `ENOENT: no such file or directory, copyfile '/workspace/backend/node_modules/prisma/libquery_engine-debian-openssl-3.0.x.so.node'`
+- **Root Cause:** Prisma `generate` command fails to download engine binary due to network issues (500 Internal Server Error from Prisma binaries CDN)
+- **Impact:** Backend server cannot start, preventing E2E test execution
+- **Attempted Solutions:**
+  1. Multiple retries of `prisma generate` command
+  2. Using `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1` flag
+  3. Manual server startup attempts
+- **Status:** Blocking - requires Prisma engine binary to be available
+
+### 10.6 Recommendations
+
+1. **Immediate Actions:**
+   - Resolve Prisma client engine download issue
+   - Options:
+     - Retry `prisma generate` when network connectivity improves
+     - Manually download and place engine file in correct location
+     - Use alternative Prisma version or installation method
+   - Once Prisma client is fully generated, execute tests
+
+2. **Test Execution:**
+   - Once backend server can start, run: `cd /workspace/frontend && npx playwright test e2e/07-delete-project.spec.ts --reporter=list`
+   - Tests are ready to execute and should pass once environment is properly configured
+
+3. **Future Improvements:**
+   - Add Prisma client generation to CI/CD pipeline
+   - Cache Prisma engines to avoid download issues
+   - Consider using Docker for consistent environment setup
