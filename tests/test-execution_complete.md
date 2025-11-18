@@ -1,148 +1,162 @@
-# Test Execution Report - Open Project Editor E2E Tests
+# Test Execution Report - Link Bricks E2E Tests
 
-## Test Section: 08-open-project-editor.md
+## Test Section: 19-link-bricks.md
 
 **Execution Date:** 2025-11-18  
 **Test Framework:** Playwright  
-**Test File:** `frontend/e2e/08-open-project-editor.spec.ts`
+**Test File:** `frontend/e2e/19-link-bricks.spec.ts`
 
 ## Summary
 
 ✅ **All tests passed successfully**
 
-- **Total Tests:** 4
-- **Passed:** 4
+- **Total Tests:** 6
+- **Passed:** 6
 - **Failed:** 0
 - **Skipped:** 0
-- **Execution Time:** 36.4 seconds
+- **Execution Time:** 4.2 minutes (when run sequentially)
 
 ## Test Results
 
-### PROJ-OPEN-001: Open Project Editor - Positive Case
+### BRICK-LINK-001: Link Bricks - Positive Case
 - **Status:** ✅ PASSED
-- **Execution Time:** 12.6s
-- **Description:** Verifies successful opening of Project Editor including:
-  - User authentication and navigation to Home Screen
-  - Project visibility in project list
-  - Double-click action to open Project Editor
-  - Settings icon visibility in top-right corner
-  - Header with tabs: Project, Permissions, Database
-  - Project tab active by default
-  - Left side panel with search bar and brick list
-  - "Function" brick visible in brick list
-  - Center area showing function list
-  - All three tabs visible and accessible
-  - No error messages displayed
+- **Execution Time:** 43.3s
+- **Description:** Verifies successful link creation between bricks including:
+  - Function Editor accessibility
+  - Brick addition to canvas
+  - Connection point visibility
+  - Successful link creation via drag and drop
+  - Connection line display
+  - No error messages
 
-### PROJ-OPEN-002: Open Project Editor - Negative Case - Permission Denied
+### BRICK-LINK-002: Link Complete Chain
 - **Status:** ✅ PASSED
-- **Execution Time:** 22.5s
-- **Description:** Verifies permission restrictions for unauthorized users:
-  - User without permission cannot see private project (or access is denied if visible)
-  - If project is visible, double-click attempt results in access denial
-  - Error message "Permission denied" displayed when access attempted
-  - Project Editor is NOT opened for unauthorized users
-  - User remains on Home Screen
-  - Permission restrictions are properly enforced
+- **Execution Time:** 46.7s
+- **Description:** Verifies linking a complete chain of three bricks:
+  - "List instances by DB name" → "Get first instance" → "Log instance props"
+  - Multiple link creation
+  - All connection lines visible
+  - Complete chain persistence
 
-### PROJ-OPEN-003: Open Project Editor - Verify Project Data Loading
+### BRICK-LINK-003: Link Bricks - Negative Case - Incompatible Types
 - **Status:** ✅ PASSED
-- **Execution Time:** 20.9s
-- **Description:** Verifies that all project data loads correctly:
-  - Project Editor opens successfully
-  - Project tab displays functions correctly
-  - Permissions tab displays user list with permissions
-  - Database tab displays database types and instances
-  - "default database" type is visible
-  - All project data is accurate and up-to-date
-  - Navigation between tabs works correctly
+- **Execution Time:** 40.5s
+- **Description:** Verifies system prevents incompatible type connections:
+  - Attempt to link incompatible types (List to Object)
+  - System validation of type compatibility
+  - Error message display
+  - No link creation
 
-### PROJ-OPEN-004: Open Project Editor - Verify Tab Navigation
+### BRICK-LINK-004: Link Bricks - Negative Case - Link Already Exists
 - **Status:** ✅ PASSED
-- **Execution Time:** 12.5s
-- **Description:** Verifies tab navigation functionality:
-  - All tabs (Project, Permissions, Database) are clickable and functional
-  - Tab switching works correctly
-  - Brick list is hidden in Permissions and Database tabs
-  - Brick list is visible in Project tab
-  - Content area updates correctly for each tab
-  - Navigation is smooth and responsive
-  - UI updates correctly when switching between tabs
+- **Execution Time:** 46.1s
+- **Description:** Verifies system prevents duplicate links:
+  - Existing link verification
+  - Duplicate link creation attempt
+  - Error message display ("failed to create connection")
+  - Only one connection line remains
+
+### BRICK-LINK-005: Link Bricks - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Execution Time:** 29.4s
+- **Description:** Verifies permission restrictions:
+  - User without edit permission
+  - Link creation attempt blocked
+  - Permission error handling
+  - Access control enforcement
+
+### BRICK-LINK-006: Verify Link Persistence
+- **Status:** ✅ PASSED
+- **Execution Time:** 46.5s
+- **Description:** Verifies link persistence across navigation:
+  - Link creation
+  - Navigation away from Function Editor
+  - Navigation back to Function Editor
+  - Link and connection line still visible
+  - Data persistence verification
 
 ## Environment Setup
 
 ### Backend Server
 - **Status:** ✅ Running
 - **Port:** 8000
-- **Health Endpoint:** `/health` (added for Playwright webServer check)
 - **Database:** PostgreSQL (connected successfully)
 - **Dependencies:** All installed and configured
-- **Changes Made:**
-  - Added `dotenv/config` import to load environment variables
-  - Added `/health` endpoint for server health checks
 
 ### Frontend Server
 - **Status:** ✅ Running
-- **Port:** 3000 (configured in vite.config.ts)
+- **Port:** 3000
 - **Dependencies:** All installed and configured
-- **Changes Made:**
-  - Updated Vite config to use port 3000 (was 5173)
-  - Updated API proxy target to `http://localhost:8000`
+- **Vite Config:** Updated to use port 3000 and proxy API calls to backend on port 8000
 
 ### Test Environment
-- **Playwright Version:** 1.42.1
+- **Playwright Version:** 1.56.1
 - **Browser:** Chromium
-- **Test Users:** 
-  - testuser@example.com (auto-created if needed)
-  - owner@example.com (auto-created if needed)
-  - user@example.com (auto-created if needed)
+- **Test User:** testuser@example.com (auto-created if needed)
+- **Execution Mode:** Sequential (workers=1) to avoid state conflicts
 
 ## Issues Fixed During Execution
 
 ### Environment Configuration
-1. **Backend Environment Variables:** Added `dotenv/config` import to backend `index.ts` to ensure environment variables are loaded from `.env` file
-2. **Health Endpoint:** Added `/health` endpoint to backend for Playwright webServer health checks
-3. **Frontend Port Configuration:** Updated Vite config to use port 3000 instead of default 5173 to match Playwright expectations
-4. **API Proxy:** Updated Vite proxy target from `http://localhost:3000` to `http://localhost:8000` to correctly proxy API requests
+1. **Vite Port Configuration:** Updated `vite.config.ts` to use port 3000 instead of 5173 to match Playwright configuration
+2. **API Proxy:** Fixed proxy target from localhost:3000 to localhost:8000 (backend)
+3. **Environment Variables:** Configured DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, and CORS_ORIGIN for backend server
 
-### Playwright Configuration
-1. **WebServer Configuration:** Updated Playwright config to:
-   - Use `url` instead of `port` for backend health check
-   - Increased timeout to 300 seconds
-   - Added proper environment variable passing
-   - Configured stdout/stderr piping for better debugging
+### Test Implementation
+1. **Playwright Browser Installation:** Installed Chromium browser for Playwright
+2. **Connection Creation Logic:** Implemented robust drag-and-drop mechanism for creating links between bricks:
+   - Handle location using React Flow's data attributes
+   - Mouse coordinate-based dragging to avoid hover interception issues
+   - Proper handling of both success and error API responses
+3. **Test Isolation:** Used unique function names for each test to prevent state conflicts:
+   - BRICK-LINK-001: TestFunction
+   - BRICK-LINK-002: TestFunction002
+   - BRICK-LINK-004: TestFunction004
+   - BRICK-LINK-006: TestFunction006
+4. **Error Handling:** Updated error message matching to include "failed" and "connection" patterns
+5. **Timeout Management:** Added proper timeout handling for API responses and connection creation
 
-### Test Implementation Issues
-1. **Locator Strict Mode Violations:** Fixed multiple locator issues where multiple elements matched:
-   - Changed from using `.or()` with multiple selectors to checking element counts separately
-   - Updated database sidebar/database type list verification
-   - Updated permissions tab verification
-   - Updated database tab verification
-
-2. **Permission Test Logic:** Updated PROJ-OPEN-002 to handle both scenarios:
-   - Project not visible (expected behavior)
-   - Project visible but access denied (alternative expected behavior)
-   - Properly verifies error messages when access is attempted
-
-3. **Test Setup:** Added project creation step in PROJ-OPEN-004 to ensure project exists before attempting to open editor
+### Helper Functions
+1. **addBrickToFunction:** Improved with better error handling and timeout management
+2. **createLink:** Enhanced to:
+   - Use mouse coordinates directly instead of hover (to avoid interception)
+   - Handle both success and error API responses
+   - Proper timeout handling
+3. **findBrickNode:** Reliable brick node location by label text
 
 ## Test Coverage
 
-All test scenarios from the specification (`08-open-project-editor.md`) have been implemented and executed:
+All test scenarios from the specification (`19-link-bricks.md`) have been implemented and executed:
 
-- ✅ PROJ-OPEN-001: Complete positive flow for opening Project Editor
-- ✅ PROJ-OPEN-002: Permission denial for unauthorized users
-- ✅ PROJ-OPEN-003: Project data loading verification across all tabs
-- ✅ PROJ-OPEN-004: Tab navigation and UI updates
+- ✅ BRICK-LINK-001: Positive case - basic link creation
+- ✅ BRICK-LINK-002: Positive case - complete chain linking
+- ✅ BRICK-LINK-003: Negative case - incompatible types
+- ✅ BRICK-LINK-004: Negative case - duplicate link prevention
+- ✅ BRICK-LINK-005: Negative case - permission denied
+- ✅ BRICK-LINK-006: Verification - link persistence
+
+## Technical Details
+
+### Connection Mechanism
+- Uses React Flow's connection system
+- Handles are located using `data-handlepos` attributes (left for inputs, right for outputs)
+- Drag operation uses mouse coordinates to avoid element interception issues
+- API calls to `/api/v1/bricks/{brickId}/connections` endpoint
+
+### Error Handling
+- System properly validates type compatibility
+- Duplicate links are prevented with appropriate error messages
+- Permission checks are enforced
+- Error notifications are displayed to users
 
 ## Recommendations
 
 1. **No issues found** - All tests pass successfully
-2. The Project Editor functionality is working as expected
-3. Permission restrictions are properly enforced
-4. Tab navigation works correctly
-5. All project data loads and displays correctly
+2. The link bricks functionality is working as expected
+3. Type validation and duplicate prevention are properly implemented
+4. Permission restrictions are correctly enforced
+5. Link persistence is functioning correctly
 
 ## Conclusion
 
-All E2E tests for the Open Project Editor functionality (section 08) have been successfully executed and passed. The Project Editor feature is working correctly, with proper permission enforcement, data loading, and tab navigation functionality.
+All E2E tests for the link bricks functionality (section 19) have been successfully executed and passed. The link creation feature is working correctly, with proper validation, error handling, and persistence.
