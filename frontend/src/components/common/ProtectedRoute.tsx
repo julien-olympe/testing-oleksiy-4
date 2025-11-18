@@ -9,6 +9,12 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const token = localStorage.getItem('accessToken');
+
+  // If we have a token, allow access even if user state hasn't updated yet
+  if (token) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return <LoadingSpinner />;

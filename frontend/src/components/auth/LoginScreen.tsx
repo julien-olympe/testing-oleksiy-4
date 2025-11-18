@@ -27,8 +27,10 @@ export const LoginScreen: React.FC = () => {
       navigate('/home');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        setError(axiosError.response?.data?.error?.message || 'An error occurred');
+        const axiosError = err as { response: { data: { error?: { message: string }; message?: string } } };
+        // Handle both error formats: { error: { message } } and { message }
+        const errorMessage = axiosError.response?.data?.error?.message || axiosError.response?.data?.message || 'An error occurred';
+        setError(errorMessage);
       } else {
         setError('An unexpected error occurred');
       }
@@ -41,12 +43,12 @@ export const LoginScreen: React.FC = () => {
     <div className="login-screen">
       <div className="login-container">
         <h1 className="login-title">Visual Programming Application</h1>
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit} className="login-form" noValidate>
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -62,7 +64,6 @@ export const LoginScreen: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
-              minLength={8}
             />
             {isRegisterMode && (
               <small className="password-hint">

@@ -1,7 +1,7 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { prisma } from '../db/client';
 import { AuthUtils, TokenBlacklist } from '../utils/auth';
-import { validateEmail, validatePassword, validateUUID } from '../utils/validation';
+import { validateEmail, validatePassword } from '../utils/validation';
 import {
   ValidationError,
   AuthenticationError,

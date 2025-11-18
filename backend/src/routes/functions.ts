@@ -50,7 +50,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { projectId: string }).projectId;
-      const { name } = request.body;
+      const { name } = request.body as CreateFunctionBody;
 
       validateUUID(projectId, 'projectId');
 
@@ -129,7 +129,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const functionId = (request.params as { id: string }).id;
-      const { name } = request.body;
+      const { name } = request.body as UpdateFunctionBody;
 
       validateUUID(functionId, 'id');
 
