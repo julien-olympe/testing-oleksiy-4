@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -21,7 +22,7 @@ async function buildServer() {
     logger: false, // We use custom logging
     requestIdLogLabel: 'requestId',
     genReqId: () => {
-      return ''; // We handle this in middleware
+      return ''; // We handle this in middleware, but need to return a string
     },
   });
 
@@ -29,6 +30,9 @@ async function buildServer() {
   fastify.addHook('onRequest', requestIdMiddleware);
   fastify.addHook('onRequest', loggingMiddleware);
   fastify.addHook('onResponse', loggingResponseHook);
+
+  // Register cookie plugin
+  await fastify.register(cookie);
 
   // Register CORS
   await fastify.register(cors, {
@@ -45,9 +49,6 @@ async function buildServer() {
     timeWindow: '1 minute',
   });
 
-  // Register cookie plugin
-  await fastify.register(cookie);
-
   // Security headers
   fastify.addHook('onSend', async (_request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
@@ -55,11 +56,6 @@ async function buildServer() {
     reply.header('X-XSS-Protection', '1; mode=block');
     reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     reply.header('Content-Security-Policy', "default-src 'self'");
-  });
-
-  // Health check endpoint
-  fastify.get('/api/health', async () => {
-    return { status: 'ok' };
   });
 
   // Register routes
@@ -73,9 +69,7 @@ async function buildServer() {
   await fastify.register(executionRoutes, { prefix: '/api/v1' });
 
   // Error handler
-  fastify.setErrorHandler((error, request, reply) => {
-    return errorHandler(error, request, reply);
-  });
+  fastify.setErrorHandler(errorHandler);
 
   return fastify;
 }
