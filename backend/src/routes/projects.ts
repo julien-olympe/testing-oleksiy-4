@@ -183,7 +183,8 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
-      await checkProjectAccess(userId, projectId);
+      // Only owners can rename projects
+      await checkProjectOwnership(userId, projectId);
 
       const project = await prisma.project.update({
         where: { id: projectId },
