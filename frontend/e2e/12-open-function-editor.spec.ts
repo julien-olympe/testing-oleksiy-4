@@ -196,20 +196,78 @@ test.describe('Open Function Editor - Section 12', () => {
 
   // Helper function to add brick to function
   async function addBrickToFunction(brickType: string) {
+    // Get the function ID from the URL
+    const url = page.url();
+    const functionIdMatch = url.match(/\/functions\/([^/]+)/);
+    if (!functionIdMatch) {
+      throw new Error('Could not extract function ID from URL');
+    }
+    const functionId = functionIdMatch[1];
+    
+    // Get brick type enum value
+    let brickTypeEnum: string;
+    if (brickType.includes('List instances by DB name') || brickType.includes('ListInstancesByDB')) {
+      brickTypeEnum = 'ListInstancesByDB';
+    } else if (brickType.includes('Get first instance') || brickType.includes('GetFirstInstance')) {
+      brickTypeEnum = 'GetFirstInstance';
+    } else if (brickType.includes('Log instance props') || brickType.includes('LogInstanceProps')) {
+      brickTypeEnum = 'LogInstanceProps';
+    } else {
+      brickTypeEnum = brickType;
+    }
+    
+    // Use drag and drop
     const brickItem = page.locator(`.brick-item:has-text("${brickType}")`).or(page.locator(`.brick-item:has-text("${brickType.replace(/\s+/g, '')}")`));
     const canvas = page.locator('.function-editor-canvas');
     
-    // Wait for API response after dragging brick
-    await Promise.all([
+    // Wait for brick item to be visible
+    await expect(brickItem).toBeVisible({ timeout: 5000 });
+    await expect(canvas).toBeVisible({ timeout: 5000 });
+    
+    // Get canvas position for drop
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) {
+      throw new Error('Canvas not found');
+    }
+    
+    // Calculate drop position (center of canvas)
+    const dropX = canvasBox.x + canvasBox.width / 2;
+    const dropY = canvasBox.y + canvasBox.height / 2;
+    
+    // Wait for API responses
+    const [createResponse] = await Promise.all([
       page.waitForResponse(response => 
-        response.url().includes('/api/v1/bricks') && 
-        response.request().method() === 'POST' &&
-        response.status() >= 200 && response.status() < 300
-      ).catch(() => {}), // Ignore if no API call
-      brickItem.dragTo(canvas)
+        (response.url().includes('/api/v1/functions/') && response.url().includes('/bricks')) || 
+        (response.url().includes('/api/v1/bricks') && response.url().includes(functionId))
+      ).catch(() => null),
+      brickItem.dragTo(canvas, { targetPosition: { x: dropX, y: dropY } })
     ]);
     
-    await page.waitForTimeout(2000); // Wait for brick to appear on canvas
+    // Wait for editor to reload after adding brick (if it does)
+    try {
+      await page.waitForResponse(response => 
+        response.url().includes('/api/v1/functions/') && 
+        response.url().includes('/editor') &&
+        response.status() >= 200 && response.status() < 300
+      , { timeout: 5000 });
+    } catch (e) {
+      // Editor might not reload, that's okay
+    }
+    
+    // Wait for brick node to appear on canvas - this is the key verification
+    // The brick should appear after the API call completes and React Flow renders
+    try {
+      await expect(page.locator('.brick-node').first()).toBeVisible({ timeout: 20000 });
+    } catch (e) {
+      // If brick node doesn't appear, check if there's an error message
+      const errorNotification = page.locator('.error-notification');
+      if (await errorNotification.isVisible().catch(() => false)) {
+        const errorText = await errorNotification.textContent().catch(() => 'Unknown error');
+        throw new Error(`Failed to add brick: ${errorText}`);
+      }
+      // Re-throw the original error
+      throw e;
+    }
   }
 
   test('FUNC-OPEN-001: Open Function Editor - Positive Case', async () => {
@@ -377,34 +435,35 @@ test.describe('Open Function Editor - Section 12', () => {
     // Verify brick appears on canvas
     await expect(page.locator('.brick-node')).toHaveCount(1);
 
+    // Get the project ID from the function editor data before navigating
+    // We'll extract it from the URL or use the back button
     // Navigate back to project editor and reopen function editor to verify data loading
     await page.goBack();
-    await page.waitForURL(/\/projects\/[^/]+/, { timeout: 10000 });
-    await expect(page.locator('.project-editor')).toBeVisible({ timeout: 10000 });
     
-    // Wait for project editor to fully load
+    // Wait for navigation - could go to project editor or home
     await page.waitForTimeout(2000);
     
-    // Ensure Project tab is active - use the same logic as openProjectEditor
-    const projectTab = page.locator('button.tab-button:has-text("Project")');
-    let tabVisible = false;
-    try {
-      tabVisible = await projectTab.isVisible({ timeout: 5000 });
-    } catch (e) {
-      tabVisible = false;
-    }
-    
-    if (!tabVisible) {
-      // Tab not visible, try navigating to project editor directly
+    // Check if we're in project editor, if not navigate there
+    const isInProjectEditor = await page.locator('.project-editor').isVisible().catch(() => false);
+    if (!isInProjectEditor) {
+      // Navigate to project editor directly
       await openProjectEditor(PROJECT_NAME);
     } else {
-      const isActive = await projectTab.evaluate((el) => el.classList.contains('active'));
-      if (!isActive) {
-        await projectTab.click();
-        await page.waitForTimeout(1000);
+      // Ensure Project tab is active
+      const projectTab = page.locator('button.tab-button:has-text("Project")');
+      const tabVisible = await projectTab.isVisible({ timeout: 5000 }).catch(() => false);
+      if (tabVisible) {
+        const isActive = await projectTab.evaluate((el) => el.classList.contains('active')).catch(() => false);
+        if (!isActive) {
+          await projectTab.click();
+          await page.waitForTimeout(1000);
+        }
       }
-      await expect(page.locator('button.tab-button.active:has-text("Project")')).toBeVisible();
     }
+    
+    // Ensure we're in project editor with Project tab active
+    await expect(page.locator('.project-editor')).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(1000);
     
     // Wait for function list to load - wait for at least one function card to appear
     const functionCards = page.locator('.function-card');

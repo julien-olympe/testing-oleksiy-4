@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { resolve } from 'path';
+// Load .env from workspace root or backend directory
+dotenv.config({ path: resolve(__dirname, '../../.env') });
+dotenv.config({ path: resolve(__dirname, '../.env') }); // Fallback to backend/.env
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -56,11 +60,6 @@ async function buildServer() {
     reply.header('X-XSS-Protection', '1; mode=block');
     reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     reply.header('Content-Security-Policy', "default-src 'self'");
-  });
-
-  // Health check endpoint
-  fastify.get('/health', async (_request, reply) => {
-    return reply.code(200).send({ status: 'ok' });
   });
 
   // Register routes
