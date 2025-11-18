@@ -50,7 +50,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { projectId: string }).projectId;
-      const { name } = request.body;
+      const { name } = request.body as CreateFunctionBody;
 
       validateUUID(projectId, 'projectId');
 
@@ -91,7 +91,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
 
   // GET /api/v1/functions/:id
   fastify.get(
-    '/:id',
+    '/functions/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
@@ -124,12 +124,12 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
 
   // PUT /api/v1/functions/:id
   fastify.put<{ Body: UpdateFunctionBody }>(
-    '/:id',
+    '/functions/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const functionId = (request.params as { id: string }).id;
-      const { name } = request.body;
+      const { name } = request.body as UpdateFunctionBody;
 
       validateUUID(functionId, 'id');
 
@@ -175,7 +175,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/functions/:id
   fastify.delete(
-    '/:id',
+    '/functions/:id',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
@@ -204,7 +204,7 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
 
   // GET /api/v1/functions/:id/editor
   fastify.get(
-    '/:id/editor',
+    '/functions/:id/editor',
     { preHandler: [authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;

@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 import { config } from './config/env';
 import { errorHandler } from './middleware/error-handler';
 import { requestIdMiddleware } from './middleware/request-id';
@@ -20,7 +21,7 @@ async function buildServer() {
     logger: false, // We use custom logging
     requestIdLogLabel: 'requestId',
     genReqId: () => {
-      return undefined; // We handle this in middleware
+      return ''; // We handle this in middleware, return empty string
     },
   });
 
@@ -28,6 +29,9 @@ async function buildServer() {
   fastify.addHook('onRequest', requestIdMiddleware);
   fastify.addHook('onRequest', loggingMiddleware);
   fastify.addHook('onResponse', loggingResponseHook);
+
+  // Register cookie plugin
+  await fastify.register(cookie);
 
   // Register CORS
   await fastify.register(cors, {
@@ -45,7 +49,7 @@ async function buildServer() {
   });
 
   // Security headers
-  fastify.addHook('onSend', async (request, reply) => {
+  fastify.addHook('onSend', async (_request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
