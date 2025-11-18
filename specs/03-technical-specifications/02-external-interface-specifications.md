@@ -76,10 +76,10 @@ This document defines all external interfaces required for the visual programmin
 - Purpose: Type-safe JavaScript for backend services
 - Configuration: Strict mode enabled
 
-**Prisma:**
-- Version: 5.19.1
-- Purpose: Type-safe ORM for PostgreSQL database access
-- Features: Type-safe queries, migrations, schema management, connection pooling
+**pg (node-postgres):**
+- Version: 8.11.3
+- Purpose: PostgreSQL client library for database access
+- Features: Parameterized queries, connection pooling, transaction support, raw SQL queries
 
 ### Development Tools
 

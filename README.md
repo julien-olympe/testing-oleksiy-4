@@ -89,10 +89,10 @@ A visual programming application that enables users to create programming logic 
    NODE_ENV=development
    ```
 
-4. **Set up Prisma:**
+4. **Set up database:**
    ```bash
-   npm run prisma:generate
-   npm run prisma:migrate
+   # Database migrations should be run manually or via your migration tool
+   # The application uses raw SQL queries with the pg (node-postgres) library
    ```
 
 5. **Start the development server:**
@@ -166,9 +166,6 @@ A visual programming application that enables users to create programming logic 
 - `npm run test` - Run unit tests
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Run tests with coverage report
-- `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:studio` - Open Prisma Studio
 
 ### Frontend Scripts
 
@@ -191,7 +188,7 @@ A visual programming application that enables users to create programming logic 
 - **Node.js**: 20.x LTS
 - **Fastify**: 4.26.2 - High-performance web framework
 - **TypeScript**: 5.5.4 - Type-safe JavaScript
-- **Prisma**: 5.19.1 - Type-safe ORM
+- **pg**: 8.11.3 - PostgreSQL client library (node-postgres)
 - **PostgreSQL**: 16.x - Primary database
 - **Jest**: 29.7.0 - Testing framework
 - **nodemon**: 3.1.0 - Development auto-reload
@@ -245,11 +242,8 @@ The database is automatically initialized when using Docker Compose. For local d
    CREATE DATABASE visual_programming;
    ```
 3. Update `DATABASE_URL` in your `.env` file
-4. Run Prisma migrations:
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   ```
+4. Run database migrations manually or via your migration tool
+   The application uses raw SQL queries with the pg (node-postgres) library
 
 ## Troubleshooting
 

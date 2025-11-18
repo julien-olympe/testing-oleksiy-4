@@ -1,4 +1,4 @@
-import { prisma } from '../db/client';
+import { queryOne, queryMany } from '../db/client';
 import { BusinessLogicError } from './errors';
 
 interface BrickOutput {
@@ -16,6 +16,25 @@ interface ExecutionContext {
   consoleOutput: string[];
 }
 
+interface Brick {
+  id: string;
+  type: string;
+  configuration: unknown;
+  connectionsFrom: Array<{ toBrickId: string }>;
+  connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
+}
+
+interface Function {
+  id: string;
+  project_id: string;
+  bricks: Brick[];
+}
+
+interface DatabaseInstance {
+  id: string;
+  values: Array<{ property_name: string; value: string }>;
+}
+
 export class ExecutionEngine {
   private static readonly EXECUTION_TIMEOUT = 2000; // 2 seconds
 
@@ -29,17 +48,7 @@ export class ExecutionEngine {
     const startTime = Date.now();
 
     // Load function with bricks and connections
-    const func = await prisma.function.findUnique({
-      where: { id: functionId },
-      include: {
-        bricks: {
-          include: {
-            connectionsFrom: true,
-            connectionsTo: true,
-          },
-        },
-      },
-    });
+    const func = await this.loadFunction(functionId);
 
     if (!func || func.bricks.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
@@ -67,7 +76,7 @@ export class ExecutionEngine {
         setTimeout(() => reject(new Error('Execution timeout')), this.EXECUTION_TIMEOUT);
       });
 
-      const executionPromise = this.executeBrick(brick, context, func.projectId);
+      const executionPromise = this.executeBrick(brick, context, func.project_id);
 
       try {
         const result = await Promise.race([executionPromise, timeoutPromise]);
@@ -93,6 +102,71 @@ export class ExecutionEngine {
       duration,
       results,
       consoleOutput: context.consoleOutput,
+    };
+  }
+
+  private static async loadFunction(functionId: string): Promise<Function | null> {
+    const func = await queryOne<{ id: string; project_id: string }>(
+      'SELECT id, project_id FROM functions WHERE id = $1',
+      [functionId]
+    );
+
+    if (!func) {
+      return null;
+    }
+
+    const bricks = await queryMany<{
+      id: string;
+      function_id: string;
+      type: string;
+      configuration: unknown;
+    }>('SELECT id, function_id, type, configuration FROM bricks WHERE function_id = $1', [
+      functionId,
+    ]);
+
+    const brickIds = bricks.map((b) => b.id);
+
+    const connections = brickIds.length > 0
+      ? await queryMany<{
+          from_brick_id: string;
+          from_output_name: string;
+          to_brick_id: string;
+          to_input_name: string;
+        }>(
+          `SELECT from_brick_id, from_output_name, to_brick_id, to_input_name
+          FROM brick_connections
+          WHERE from_brick_id = ANY($1::uuid[]) OR to_brick_id = ANY($1::uuid[])`,
+          [brickIds]
+        )
+      : [];
+
+    const bricksWithConnections: Brick[] = bricks.map((brick) => {
+      const config =
+        typeof brick.configuration === 'string'
+          ? JSON.parse(brick.configuration)
+          : brick.configuration;
+
+      return {
+        id: brick.id,
+        type: brick.type,
+        configuration: config,
+        connectionsFrom: connections
+          .filter((c) => c.from_brick_id === brick.id)
+          .map((c) => ({ toBrickId: c.to_brick_id })),
+        connectionsTo: connections
+          .filter((c) => c.to_brick_id === brick.id)
+          .map((c) => ({
+            fromBrickId: c.from_brick_id,
+            fromOutputName: c.from_output_name,
+            toInputName: c.to_input_name,
+          })),
+      };
+    });
+
+    return {
+      id: func.id,
+      project_id: func.project_id,
+      bricks: bricksWithConnections,
     };
   }
 
@@ -217,45 +291,17 @@ export class ExecutionEngine {
     }
 
     // Find database (check project databases and default database)
-    let database = await prisma.database.findFirst({
-      where: {
-        name: databaseName,
-        projectId,
-      },
-      include: {
-        properties: true,
-        instances: {
-          include: {
-            values: {
-              include: {
-                property: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    let database = await queryOne<{ id: string }>(
+      'SELECT id FROM databases WHERE name = $1 AND project_id = $2',
+      [databaseName, projectId]
+    );
 
     // If not found in project, check default database
     if (!database) {
-      database = await prisma.database.findFirst({
-        where: {
-          name: databaseName,
-          projectId: '00000000-0000-0000-0000-000000000000', // System project ID
-        },
-        include: {
-          properties: true,
-          instances: {
-            include: {
-              values: {
-                include: {
-                  property: true,
-                },
-              },
-            },
-          },
-        },
-      });
+      database = await queryOne<{ id: string }>(
+        "SELECT id FROM databases WHERE name = $1 AND project_id = '00000000-0000-0000-0000-000000000000'",
+        [databaseName]
+      );
     }
 
     if (!database) {
@@ -265,22 +311,42 @@ export class ExecutionEngine {
       });
     }
 
-    const list = database.instances.map((instance) => {
-      const values: Record<string, string> = {};
-      for (const value of instance.values) {
-        values[value.property.name] = value.value;
-      }
-      return {
-        id: instance.id,
-        values,
-      };
-    });
+    // Get instances
+    const instances = await queryMany<{ id: string }>(
+      'SELECT id FROM database_instances WHERE database_id = $1',
+      [database.id]
+    );
+
+    // Get values for each instance
+    const instancesWithValues = await Promise.all(
+      instances.map(async (instance) => {
+        const values = await queryMany<{ property_name: string; value: string }>(
+          `SELECT 
+            dp.name as property_name,
+            div.value
+          FROM database_instance_values div
+          JOIN database_properties dp ON div.property_id = dp.id
+          WHERE div.instance_id = $1`,
+          [instance.id]
+        );
+
+        const valueMap: Record<string, string> = {};
+        for (const value of values) {
+          valueMap[value.property_name] = value.value;
+        }
+
+        return {
+          id: instance.id,
+          values: valueMap,
+        };
+      })
+    );
 
     return {
       brickId: brick.id,
       brickType: 'ListInstancesByDB',
       output: {
-        list,
+        list: instancesWithValues,
       },
     };
   }
@@ -310,7 +376,9 @@ export class ExecutionEngine {
       });
     }
 
-    const list = sourceOutput[inputConnection.fromOutputName] as Array<{ id: string; values: Record<string, string> }> | undefined;
+    const list = sourceOutput[inputConnection.fromOutputName] as
+      | Array<{ id: string; values: Record<string, string> }>
+      | undefined;
 
     if (!Array.isArray(list) || list.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'List is empty, cannot get first instance', {
@@ -353,7 +421,9 @@ export class ExecutionEngine {
       });
     }
 
-    const instance = sourceOutput[inputConnection.fromOutputName] as { id: string; values: Record<string, string> } | undefined;
+    const instance = sourceOutput[inputConnection.fromOutputName] as
+      | { id: string; values: Record<string, string> }
+      | undefined;
 
     if (!instance) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Instance not found in input', {

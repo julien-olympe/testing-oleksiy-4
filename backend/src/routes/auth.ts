@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../db/client';
+import { query, queryOne } from '../db/client';
 import { AuthUtils, TokenBlacklist } from '../utils/auth';
 import { validateEmail, validatePassword } from '../utils/validation';
 import {
@@ -19,6 +19,13 @@ interface RegisterBody {
 interface LoginBody {
   email: string;
   password: string;
+}
+
+interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  created_at: Date;
 }
 
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
@@ -43,9 +50,10 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     validatePassword(password);
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await queryOne<UserRow>(
+      'SELECT id, email, password_hash, created_at FROM users WHERE email = $1',
+      [email]
+    );
 
     if (existingUser) {
       throw new BusinessLogicError('EMAIL_ALREADY_REGISTERED', 'Email already registered');
@@ -53,22 +61,16 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     // Hash password and create user
     const passwordHash = await AuthUtils.hashPassword(password);
+    const userId = crypto.randomUUID();
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-      },
-    });
+    await query(
+      'INSERT INTO users (id, email, password_hash, created_at) VALUES ($1, $2, $3, NOW())',
+      [userId, email, passwordHash]
+    );
 
     // Generate tokens
-    const accessToken = AuthUtils.generateAccessToken(user.id, user.email);
-    const refreshToken = AuthUtils.generateRefreshToken(user.id, user.email);
+    const accessToken = AuthUtils.generateAccessToken(userId, email);
+    const refreshToken = AuthUtils.generateRefreshToken(userId, email);
 
     // Set refresh token cookie
     reply.setCookie('refreshToken', refreshToken, {
@@ -78,11 +80,16 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
+    const user = await queryOne<UserRow>(
+      'SELECT id, email, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
     reply.status(201).send({
       user: {
-        id: user.id,
-        email: user.email,
-        createdAt: user.createdAt.toISOString(),
+        id: user!.id,
+        email: user!.email,
+        createdAt: user!.created_at.toISOString(),
       },
       token: accessToken,
       expiresIn: 86400,
@@ -107,16 +114,17 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await queryOne<UserRow>(
+      'SELECT id, email, password_hash, created_at FROM users WHERE email = $1',
+      [email]
+    );
 
     if (!user) {
       throw new AuthenticationError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
 
     // Verify password
-    const isValidPassword = await AuthUtils.comparePassword(password, user.passwordHash);
+    const isValidPassword = await AuthUtils.comparePassword(password, user.password_hash);
 
     if (!isValidPassword) {
       throw new AuthenticationError('Invalid email or password', 'INVALID_CREDENTIALS');
@@ -138,7 +146,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       user: {
         id: user.id,
         email: user.email,
-        createdAt: user.createdAt.toISOString(),
+        createdAt: user.created_at.toISOString(),
       },
       token: accessToken,
       expiresIn: 86400,
@@ -179,9 +187,10 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       const payload = AuthUtils.verifyRefreshToken(refreshToken);
 
       // Verify user exists
-      const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-      });
+      const user = await queryOne<UserRow>(
+        'SELECT id, email, created_at FROM users WHERE id = $1',
+        [payload.userId]
+      );
 
       if (!user) {
         throw new NotFoundError('User');
