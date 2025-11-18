@@ -1,5 +1,6 @@
 import { prisma } from '../db/client';
 import { BusinessLogicError } from './errors';
+import { Prisma } from '@prisma/client';
 
 interface BrickOutput {
   [outputName: string]: unknown;
@@ -40,6 +41,16 @@ export class ExecutionEngine {
         },
       },
     });
+    
+    // Debug: Log raw configuration from database
+    if (func && func.bricks.length > 0) {
+      console.log(`[ExecutionEngine] Raw configurations from database:`);
+      for (const brick of func.bricks) {
+        console.log(`[ExecutionEngine] Brick ${brick.id} (${brick.type}):`, JSON.stringify(brick.configuration));
+        console.log(`[ExecutionEngine] Configuration type:`, typeof brick.configuration);
+        console.log(`[ExecutionEngine] Configuration is array:`, Array.isArray(brick.configuration));
+      }
+    }
 
     if (!func || func.bricks.length === 0) {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
@@ -48,19 +59,19 @@ export class ExecutionEngine {
     // Normalize configurations (ensure they're always plain objects, not null, arrays, or other types)
     for (const brick of func.bricks) {
       // Handle Prisma JsonValue type - ensure it's a plain object
+      // Prisma returns JsonValue which can be JsonObject, JsonArray, string, number, boolean, or null
       if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
-        brick.configuration = {};
+        // If it's null, undefined, or not an object, set to empty object
+        brick.configuration = {} as Prisma.JsonObject;
       } else {
-        // Ensure it's a plain object by creating a new object from it
-        // This handles cases where Prisma might return JsonObject or other JsonValue types
-        try {
-          brick.configuration = JSON.parse(JSON.stringify(brick.configuration)) as Record<string, unknown>;
-        } catch (e) {
-          // If parsing fails, default to empty object
-          console.warn(`[ExecutionEngine] Failed to parse configuration for brick ${brick.id}, using empty object:`, e);
-          brick.configuration = {};
-        }
+        // Prisma already returns JsonObject as a plain object, so we can use it directly
+        // But we'll ensure it's properly typed as JsonObject
+        // No need to JSON.parse(JSON.stringify()) as it's already a plain object from Prisma
+        brick.configuration = brick.configuration as Prisma.JsonObject;
       }
+      // Log configuration for debugging
+      console.log(`[ExecutionEngine] Normalized configuration for brick ${brick.id} (${brick.type}):`, JSON.stringify(brick.configuration));
+      console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(brick.configuration as Prisma.JsonObject));
     }
 
     // Log loaded function data for debugging
@@ -130,7 +141,7 @@ export class ExecutionEngine {
     };
   }
 
-  private static validateFunction(bricks: Array<{ id: string; type: string; configuration: unknown }>): void {
+  private static validateFunction(bricks: Array<{ id: string; type: string; configuration: Prisma.JsonValue }>): void {
     // Check for required inputs
     for (const brick of bricks) {
       if (brick.type === 'ListInstancesByDB') {
@@ -153,14 +164,19 @@ export class ExecutionEngine {
         }
         
         // Convert to plain object to ensure proper property access
-        const config = brick.configuration as Record<string, unknown>;
+        // After normalization, configuration should be Prisma.JsonObject
+        const config = brick.configuration as Prisma.JsonObject;
         const databaseName = config.databaseName;
         
         console.log(`[ExecutionEngine] databaseName value:`, databaseName);
         console.log(`[ExecutionEngine] databaseName type:`, typeof databaseName);
         console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(config));
         
-        if (!databaseName || typeof databaseName !== 'string' || databaseName.trim() === '') {
+        // Handle case where databaseName might be a JsonValue (string, number, etc.)
+        const databaseNameStr = typeof databaseName === 'string' ? databaseName : 
+                                databaseName !== null && databaseName !== undefined ? String(databaseName) : null;
+        
+        if (!databaseNameStr || databaseNameStr.trim() === '') {
           console.log(`[ExecutionEngine] ListInstancesByDB validation failed - databaseName is missing or empty`);
           console.log(`[ExecutionEngine] Full configuration object:`, JSON.stringify(config, null, 2));
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
@@ -173,7 +189,7 @@ export class ExecutionEngine {
             fullConfig: config,
           });
         }
-        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${databaseName}`);
+        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${databaseNameStr}`);
       }
     }
 
@@ -245,7 +261,7 @@ export class ExecutionEngine {
     brick: {
       id: string;
       type: string;
-      configuration: unknown;
+      configuration: Prisma.JsonValue;
       connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext,
@@ -272,13 +288,25 @@ export class ExecutionEngine {
   }
 
   private static async executeListInstancesByDB(
-    brick: { id: string; configuration: unknown },
+    brick: { id: string; configuration: Prisma.JsonValue },
     _context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
     // Configuration should already be normalized to a plain object by executeFunction
-    const config = brick.configuration as Record<string, unknown>;
-    const databaseName = config?.databaseName as string | undefined;
+    // After normalization, it should be Prisma.JsonObject
+    if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
+      throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
+        brickId: brick.id,
+        brickType: 'ListInstancesByDB',
+        missingInputs: ['databaseName'],
+        reason: 'Configuration is not a valid object',
+      });
+    }
+    const config = brick.configuration as Prisma.JsonObject;
+    const databaseNameValue = config.databaseName;
+    // Handle case where databaseName might be a JsonValue (string, number, etc.)
+    const databaseName = typeof databaseNameValue === 'string' ? databaseNameValue : 
+                        databaseNameValue !== null && databaseNameValue !== undefined ? String(databaseNameValue) : undefined;
 
     if (!databaseName) {
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {

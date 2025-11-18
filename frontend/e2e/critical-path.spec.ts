@@ -592,18 +592,25 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       try {
         const updateData = await updateResponse.json();
         const updatedConfig = updateData.brick?.configuration;
+        console.log(`[Test] Step 12 - Configuration after update:`, JSON.stringify(updatedConfig));
         if (updatedConfig && updatedConfig.databaseName !== 'default database') {
           throw new Error(`Configuration update failed: databaseName is "${updatedConfig.databaseName}", expected "default database"`);
         }
+        if (!updatedConfig || !updatedConfig.databaseName) {
+          throw new Error(`Configuration update failed: databaseName is missing in response. Full config: ${JSON.stringify(updatedConfig)}`);
+        }
       } catch (e) {
         // If we can't parse the response, that's okay - the status check above should catch errors
+        if (e instanceof Error && e.message.includes('Configuration update failed')) {
+          throw e;
+        }
       }
       
       // Wait for editor data refresh
       await page.waitForResponse(response => 
         response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
       );
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(2000); // Increased wait to ensure database transaction commits
     });
 
     // Step 13: Link Bricks
@@ -745,12 +752,28 @@ test.describe('Critical Path E2E Test - Complete Happy Path', () => {
       
       // Wait a bit to ensure all previous updates (Step 12 configuration) are persisted to database
       // Increased wait time to ensure database transaction commits
-      await page.waitForTimeout(3000);
+      // Also wait for any pending API calls to complete
+      await page.waitForTimeout(5000);
+      
+      // Verify configuration is still present by checking the editor API response
+      const editorCheckResponse = await page.waitForResponse(response => 
+        response.url().includes('/functions/') && response.url().includes('/editor') && response.request().method() === 'GET'
+      , { timeout: 10000 }).catch(() => null);
+      
+      if (editorCheckResponse) {
+        const editorData = await editorCheckResponse.json();
+        const listBrick = editorData.bricks?.find((b: any) => b.type === 'ListInstancesByDB');
+        if (listBrick && listBrick.configuration?.databaseName) {
+          console.log(`[Test] Step 14 - Configuration verified before execution:`, JSON.stringify(listBrick.configuration));
+        } else {
+          console.warn(`[Test] Step 14 - Configuration not found in editor response before execution`);
+        }
+      }
       
       // Force a page refresh to ensure we have the latest data from database
       // This helps ensure any pending database writes are complete
       await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(3000); // Increased wait after reload
       
       // Verify we're still in the function editor after reload
       runButton = page.locator('button:has-text("RUN"), button:has-text("Run")');
