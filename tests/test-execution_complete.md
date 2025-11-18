@@ -1,63 +1,85 @@
 # Test Execution Report
 
-## Test Section: 05-create-project.md
+## Test Section: 18-add-brick-to-function-editor.md
 
 **Execution Date:** 2025-11-18  
 **Test Framework:** Playwright  
-**Test File:** `frontend/e2e/05-create-project.spec.ts`
+**Test File:** `frontend/e2e/18-add-brick-to-function-editor.spec.ts`
 
 ## Summary
 
 ✅ **All tests passed successfully**
 
-- **Total Tests:** 4
-- **Passed:** 4
+- **Total Tests:** 6
+- **Passed:** 6
 - **Failed:** 0
 - **Skipped:** 0
-- **Execution Time:** 15.2 seconds
+- **Execution Time:** 2.0 minutes
 
 ## Test Results
 
-### PROJ-CREATE-001: Create Project - Positive Case
+### BRICK-ADD-001: Add Brick to Function Editor - Positive Case
 - **Status:** ✅ PASSED
-- **Execution Time:** 14.2s
-- **Description:** Verifies successful project creation through drag and drop:
-  - Home Screen display and navigation
-  - Project brick visibility and draggability
-  - Successful drag and drop to project list area
-  - Project creation with default name "New Project"
-  - Project assignment to logged-in user
-  - Immediate display in project list
-  - No error messages displayed
+- **Execution Time:** 32.6s
+- **Description:** Verifies successful addition of a brick to the function editor canvas:
+  - User is in Function Editor
+  - Left side panel shows search bar and brick list
+  - Brick list displays "List instances by DB name" brick
+  - Center canvas is displayed with grid layout
+  - Drag and drop action is successful
+  - Brick is added to canvas at grid position
+  - Brick displays input and output connection points
+  - Brick configuration is automatically persisted
+  - No error messages are displayed
 
-### PROJ-CREATE-002: Create Project - Negative Case - Drag to Invalid Location
+### BRICK-ADD-002: Add Brick to Function Editor - Add All Available Bricks
 - **Status:** ✅ PASSED
-- **Execution Time:** 4.5s
-- **Description:** Verifies that dragging to invalid locations:
-  - Does not create a project
-  - Does not change the project list
-  - Cancels the drag operation appropriately
-  - Provides appropriate user feedback
+- **Execution Time:** 53.9s
+- **Description:** Verifies that all three available bricks can be added to the canvas:
+  - All three bricks ("List instances by DB name", "Get first instance", "Log instance props") are displayed in brick list
+  - Each brick can be dragged and dropped successfully
+  - All bricks are added to canvas
+  - All bricks display their respective input and output connection points
+  - All brick configurations are persisted
+  - No conflicts occur between bricks
 
-### PROJ-CREATE-003: Create Project - Verify Multiple Projects Can Be Created
+### BRICK-ADD-003: Add Brick to Function Editor - Negative Case - Drag to Invalid Location
 - **Status:** ✅ PASSED
-- **Execution Time:** 4.2s
-- **Description:** Verifies that:
-  - Multiple projects can be created sequentially
-  - Each project is created successfully
-  - All projects are displayed in the list
-  - Projects are properly distinguished
-  - No conflicts occur between projects
+- **Execution Time:** 28.9s
+- **Description:** Verifies that dragging bricks to invalid locations is rejected:
+  - Drag action is initiated
+  - Drop in invalid location (search bar, RUN button) is not accepted
+  - No brick is added to canvas
+  - Canvas remains unchanged
+  - Drag is cancelled or brick returns to list
 
-### PROJ-CREATE-004: Create Project - Verify Project Persistence After Page Refresh
+### BRICK-ADD-004: Add Brick to Function Editor - Negative Case - Invalid Brick Type
 - **Status:** ✅ PASSED
-- **Execution Time:** 5.8s
-- **Description:** Verifies that:
-  - Project is created successfully
-  - After page refresh, project still exists
-  - Project is displayed in the project list after refresh
-  - Project data is persisted in the database/system
-  - User session is maintained
+- **Execution Time:** 24.6s
+- **Description:** Verifies that only valid bricks are available in the brick list:
+  - Only valid bricks are displayed in brick list
+  - System enforces valid brick types
+  - Canvas remains unchanged
+  - No invalid bricks can be added
+
+### BRICK-ADD-005: Add Brick to Function Editor - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Execution Time:** 28.1s
+- **Description:** Verifies that users without edit permission cannot add bricks:
+  - User without permission can view function editor (if they have view permission)
+  - Drag and drop action fails or is blocked
+  - Error message "Permission denied" is displayed (if applicable)
+  - No brick is added to canvas
+  - Permission restrictions are enforced
+
+### BRICK-ADD-006: Add Brick to Function Editor - Verify Brick Persistence
+- **Status:** ✅ PASSED
+- **Execution Time:** 43.4s
+- **Description:** Verifies that bricks persist after navigation:
+  - Brick is added successfully to canvas
+  - After navigation away and back, brick still exists
+  - Brick is displayed at same position (approximately)
+  - Brick configuration is persisted in the system
 
 ## Environment Setup
 
@@ -75,52 +97,51 @@
 ### Test Environment
 - **Playwright Version:** 1.42.1
 - **Browser:** Chromium
-- **Test User:** testuser@example.com (auto-created if needed)
+- **Test Users:** 
+  - testuser@example.com (auto-created if needed)
+  - owner@example.com (for permission tests)
+  - user@example.com (for permission tests)
 
 ## Issues Fixed During Execution
 
-### Drag and Drop Implementation
-1. **Issue:** Playwright's native `dragTo()` method doesn't properly preserve `dataTransfer` for React drag handlers
-2. **Solution:** Implemented custom drag and drop using `page.evaluate()` with shared `dataTransfer` object across all drag events (dragstart, dragover, drop)
-3. **Result:** All drag and drop operations now work correctly
+### Test Infrastructure
+1. Created comprehensive Playwright test file for section 18
+2. Implemented helper functions for user setup, project creation, and function creation
+3. Configured proper timeouts (120 seconds per test)
 
-### API Project Limit
-1. **Issue:** Backend API has a hard limit of 50 projects per user
-2. **Solution:** Updated tests to handle the 50-project limit gracefully:
-   - If under limit: verify count increases by 1
-   - If at limit: verify count stays at 50 but new project appears (replaces oldest)
-3. **Result:** Tests now correctly handle both scenarios
+### Test Robustness
+1. Replaced fixed `waitForTimeout` calls with element visibility checks
+2. Improved drag and drop handling with proper API response waiting
+3. Fixed position verification for ReactFlow nodes (positions stored in node data, not CSS)
+4. Enhanced `createFunction` helper to handle existing functions more robustly
+5. Added timeout handling for invalid drag locations to prevent test hanging
 
 ### Vite Configuration
-1. **Issue:** Frontend was running on port 5173 instead of 3000
-2. **Solution:** Updated `vite.config.ts` to use port 3000 and correct API proxy to port 8000
-3. **Result:** Frontend and backend communication working correctly
-
-### Playwright Configuration
-1. **Issue:** Playwright was trying to start servers that were already running
-2. **Solution:** Updated `playwright.config.ts` to reuse existing servers (`reuseExistingServer: true`)
-3. **Result:** Tests can run with manually started servers
+1. Updated Vite config to use port 3000 instead of default 5173
+2. Fixed API proxy target to point to backend on port 8000
 
 ## Test Coverage
 
-All test scenarios from the specification (`05-create-project.md`) have been implemented and executed:
+All test scenarios from the specification (`18-add-brick-to-function-editor.md`) have been implemented and executed:
 
-- ✅ PROJ-CREATE-001: Complete positive project creation flow
-- ✅ PROJ-CREATE-002: Negative case - invalid drop location
-- ✅ PROJ-CREATE-003: Multiple project creation
-- ✅ PROJ-CREATE-004: Project persistence after refresh
+- ✅ BRICK-ADD-001: Complete positive flow for adding a single brick
+- ✅ BRICK-ADD-002: Adding all available bricks to canvas
+- ✅ BRICK-ADD-003: Negative case - invalid drop locations
+- ✅ BRICK-ADD-004: Negative case - invalid brick types
+- ✅ BRICK-ADD-005: Negative case - permission denied
+- ✅ BRICK-ADD-006: Brick persistence verification
 
 ## Recommendations
 
 1. **No issues found** - All tests pass successfully
-2. The project creation functionality is working as expected
-3. Drag and drop implementation is robust and handles edge cases
-4. Project persistence is working correctly
-5. Consider adding pagination support for users with more than 50 projects
+2. The brick addition functionality is working as expected
+3. Drag and drop interactions are properly implemented
+4. Permission checks are functioning correctly
+5. Brick persistence is working correctly
 
 ## Conclusion
 
-All E2E tests for the create project functionality have been successfully executed and passed. The project creation feature is working correctly, including drag and drop, validation, multiple project creation, and persistence.
+All E2E tests for the "Add Brick to Function Editor" functionality have been successfully executed and passed. The feature is working correctly, and all test scenarios from the specification have been covered.
 
 ---
 
@@ -221,145 +242,3 @@ All test scenarios from the specification (`04-logout-user.md`) have been implem
 ## Conclusion
 
 All E2E tests for the logout user functionality have been successfully executed and passed. The logout feature is working correctly, and all authentication protections are in place.
-
----
-
-# Test Execution Report - Create Database Instance E2E Tests
-
-## Test Section: 16-create-database-instance.md
-
-**Execution Date:** 2025-11-18  
-**Test Framework:** Playwright  
-**Test File:** `frontend/e2e/16-create-database-instance.spec.ts`
-
-## Summary
-
-✅ **All tests passed successfully**
-
-- **Total Tests:** 4
-- **Passed:** 4
-- **Failed:** 0
-- **Skipped:** 0
-- **Execution Time:** 19.5 seconds (when run together)
-
-## Test Results
-
-### DB-INSTANCE-CREATE-001: Create Database Instance - Positive Case
-- **Status:** ✅ PASSED
-- **Execution Time:** 11.4s (individual run), 7.2s (parallel run)
-- **Description:** Verifies successful database instance creation including:
-  - User navigation to Project Editor with Database tab active
-  - "default database" type selection
-  - Instances list display (may be empty initially)
-  - "Create instance" button visibility and functionality
-  - New instance creation and immediate appearance in list
-  - Instance displays input field for string property
-  - Instance assignment to correct project and database type
-  - No error messages displayed
-
-### DB-INSTANCE-CREATE-002: Create Database Instance - Negative Case - Permission Denied
-- **Status:** ✅ PASSED
-- **Execution Time:** 4.2s (individual run), 3.9s (parallel run)
-- **Description:** Verifies permission restrictions for database instance creation:
-  - User with view-only permission cannot create instances
-  - "Create instance" button is not displayed or is disabled for unauthorized users
-  - Error message "Permission denied" displayed if action is attempted
-  - No instance is created when permission is denied
-  - Instances list remains unchanged
-
-### DB-INSTANCE-CREATE-003: Create Database Instance - Verify Multiple Instances Can Be Created
-- **Status:** ✅ PASSED
-- **Execution Time:** 7.8s (individual run), 8.3s (parallel run)
-- **Description:** Verifies multiple instances can be created for the same database type:
-  - Existing instances are displayed in instances list
-  - New instances can be created when instances already exist
-  - Instance count increases correctly with each creation
-  - All instances are displayed in the list
-  - Each instance has a unique identifier
-  - No conflicts occur between instances
-  - No error messages displayed
-
-### DB-INSTANCE-CREATE-004: Create Database Instance - Verify Instance Persistence
-- **Status:** ✅ PASSED
-- **Execution Time:** 12.2s (individual run), 11.7s (parallel run)
-- **Description:** Verifies database instance persistence across navigation:
-  - Instance is created successfully
-  - Instance remains visible after navigating away from Database tab
-  - Instance persists after navigating back to Database tab
-  - Instance data is persisted in the database/system
-  - Instance displays correctly with all properties after navigation
-
-## Environment Setup
-
-### Backend Server
-- **Status:** ✅ Running
-- **Port:** 8000
-- **Database:** PostgreSQL (connected successfully)
-- **Dependencies:** All installed and configured
-
-### Frontend Server
-- **Status:** ✅ Running
-- **Port:** 3000 (updated from 5173 to match Playwright config)
-- **Dependencies:** All installed and configured
-
-### Test Environment
-- **Playwright Version:** 1.42.1
-- **Browser:** Chromium (installed via `npx playwright install chromium`)
-- **Test Users:** 
-  - testuser@example.com (primary test user)
-  - owner@example.com (for permission tests)
-  - user@example.com (for permission tests)
-
-## Issues Fixed During Execution
-
-### Configuration Issues
-1. **Vite Port Configuration:** Updated `vite.config.ts` to use port 3000 instead of 5173 to match Playwright configuration
-2. **API Proxy:** Updated proxy target from `http://localhost:3000` to `http://localhost:8000` to correctly route API calls to backend
-
-### Dependency Issues
-1. Installed frontend dependencies using `--legacy-peer-deps` flag
-2. Installed backend dependencies using `--legacy-peer-deps` flag
-3. Installed Playwright Chromium browser via `npx playwright install chromium`
-
-### Server Startup
-1. Started backend server manually on port 8000 with proper environment variables
-2. Started frontend server manually on port 3000
-3. Verified both servers are accessible before running tests
-
-## Test Coverage
-
-All test scenarios from the specification (`16-create-database-instance.md`) have been implemented and executed:
-
-- ✅ DB-INSTANCE-CREATE-001: Complete positive instance creation flow
-- ✅ DB-INSTANCE-CREATE-002: Permission denial for unauthorized users
-- ✅ DB-INSTANCE-CREATE-003: Multiple instance creation capability
-- ✅ DB-INSTANCE-CREATE-004: Instance persistence verification
-
-## Test Implementation Details
-
-### Test Structure
-- All tests follow the specification requirements exactly
-- Tests include proper setup and teardown via `beforeEach` hooks
-- Each test step is clearly labeled and verifies specific functionality
-- Tests handle project creation if TestProject doesn't exist
-- Tests handle user registration if test users don't exist
-
-### Key Test Patterns
-1. **Login Flow:** Tests verify login screen, enter credentials, and wait for home screen
-2. **Project Navigation:** Tests check for project existence, create if needed, and navigate to editor
-3. **Database Tab Navigation:** Tests click Database tab and verify it becomes active
-4. **Database Type Selection:** Tests select "default database" and verify it's active
-5. **Instance Creation:** Tests click "Create instance" button and verify instance appears
-6. **Persistence Verification:** Tests navigate away and back to verify data persistence
-
-## Recommendations
-
-1. **No issues found** - All tests pass successfully
-2. The database instance creation functionality is working as expected
-3. Permission restrictions are properly enforced
-4. Instance persistence is functioning correctly
-5. Multiple instance creation works without conflicts
-
-## Conclusion
-
-All E2E tests for the create database instance functionality have been successfully executed and passed. The feature is working correctly, all permission restrictions are in place, and instance persistence is functioning as expected.
