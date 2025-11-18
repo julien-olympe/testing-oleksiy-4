@@ -655,8 +655,116 @@ cd /workspace/frontend && npm run test:e2e
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
 - E2E Tests: 1 (passed - 13/13 steps)
-**Tests Passed:** 3 unit tests + 13 E2E steps  
-**Tests Failed:** 0 unit tests + 0 E2E steps
-**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
+- Login E2E Tests: 6 (all passed)
+**Tests Passed:** 3 unit tests + 13 E2E steps + 6 login E2E tests  
+**Tests Failed:** 0 unit tests + 0 E2E steps + 0 login E2E tests
+**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + 2 login E2E fixes
 **Known Issues:**
 - None
+
+---
+
+## 10. Login User End-to-End Tests
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/03-login-user.md`  
+**Test IDs:** LOGIN-001 through LOGIN-006  
+**Test Name:** Login User Test Scenarios
+
+### 10.2 Test Coverage
+
+The login user tests cover the following scenarios:
+1. LOGIN-001: Login User - Positive Case ✅
+2. LOGIN-002: Login User - Negative Case - Invalid Email ✅
+3. LOGIN-003: Login User - Negative Case - Invalid Password ✅
+4. LOGIN-004: Login User - Negative Case - Empty Email Field ✅
+5. LOGIN-005: Login User - Negative Case - Empty Password Field ✅
+6. LOGIN-006: Login User - Negative Case - Both Fields Empty ✅
+
+### 10.3 Execution Status
+
+**Status:** ✅ PASSED (6/6 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/03-login-user.spec.ts --reporter=list`  
+**Test Duration:** ~11.4 seconds  
+**Overall Result:** 6 tests passed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+- ✅ Test user exists: `testuser@example.com` with password `SecurePass123!`
+
+### 10.4 Detailed Test Results
+
+#### LOGIN-001: Login User - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** 820ms
+- **Details:** Successfully logged in with valid credentials, redirected to home screen, no error messages displayed
+
+#### LOGIN-002: Login User - Negative Case - Invalid Email
+- **Status:** ✅ PASSED (after fix)
+- **Duration:** 2.2s
+- **Details:** Error message "Invalid email or password" displayed correctly, user remains on login screen
+- **Issues Fixed:**
+  - **Root Cause:** Axios interceptor was trying to refresh token for 401 errors on auth endpoints, interfering with error display
+  - **Fix Applied:** Updated `/workspace/frontend/src/services/api.ts` to skip token refresh for auth endpoints (`/auth/`)
+  - **Additional Fix:** Improved error handling in `/workspace/frontend/src/components/auth/LoginScreen.tsx` to handle different error response formats
+
+#### LOGIN-003: Login User - Negative Case - Invalid Password
+- **Status:** ✅ PASSED (after fix)
+- **Duration:** 2.1s
+- **Details:** Error message "Invalid email or password" displayed correctly, user remains on login screen
+- **Issues Fixed:** Same as LOGIN-002 (axios interceptor fix)
+
+#### LOGIN-004: Login User - Negative Case - Empty Email Field
+- **Status:** ✅ PASSED
+- **Duration:** 1.4s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
+
+#### LOGIN-005: Login User - Negative Case - Empty Password Field
+- **Status:** ✅ PASSED
+- **Duration:** 1.5s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
+
+#### LOGIN-006: Login User - Negative Case - Both Fields Empty
+- **Status:** ✅ PASSED
+- **Duration:** 1.4s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
+
+### 10.5 Issues Found and Fixes Applied
+
+**Total Issues Fixed:** 2
+
+1. **Axios Interceptor Interfering with Auth Errors:**
+   - **Issue:** Axios response interceptor was attempting to refresh tokens for 401 errors on login/register endpoints, preventing error messages from being displayed
+   - **Fix Applied:** Updated `/workspace/frontend/src/services/api.ts` to skip token refresh logic for auth endpoints (`/auth/`)
+   - **Code Changes:**
+     - Added check: `const isAuthEndpoint = originalRequest.url?.includes('/auth/');`
+     - Updated condition: `if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint)`
+     - Added check to prevent redirect if already on login page
+
+2. **Error Handling in LoginScreen:**
+   - **Issue:** Error handling was not robust enough to handle different error response formats
+   - **Fix Applied:** Improved error extraction logic in `/workspace/frontend/src/components/auth/LoginScreen.tsx`
+   - **Code Changes:**
+     - Added multiple fallback options for error message extraction
+     - Handles `response.data.error.message`, `response.data.message`, `error.message`, and `response.statusText`
+     - Better handling of Error instances
+
+### 10.6 Test File Created
+
+**Test File:** `/workspace/frontend/e2e/03-login-user.spec.ts`
+- Created comprehensive test suite covering all 6 login scenarios
+- Tests include proper waiting for API responses and loading states
+- Tests verify error messages, navigation, and authentication state
+
+### 10.7 Files Modified
+
+1. `/workspace/frontend/e2e/03-login-user.spec.ts` - Created login test suite
+2. `/workspace/frontend/src/services/api.ts` - Fixed axios interceptor to skip token refresh for auth endpoints
+3. `/workspace/frontend/src/components/auth/LoginScreen.tsx` - Improved error handling robustness

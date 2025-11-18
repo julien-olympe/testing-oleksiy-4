@@ -26,12 +26,38 @@ export const LoginScreen: React.FC = () => {
       }
       navigate('/home');
     } catch (err: unknown) {
+      let errorMessage = 'An error occurred';
+      
       if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        setError(axiosError.response?.data?.error?.message || 'An error occurred');
-      } else {
-        setError('An unexpected error occurred');
+        const axiosError = err as { 
+          response?: { 
+            data?: { 
+              error?: { 
+                message?: string;
+              };
+              message?: string;
+            };
+            status?: number;
+            statusText?: string;
+          };
+          message?: string;
+        };
+        
+        // Try to extract error message from different possible locations
+        if (axiosError.response?.data?.error?.message) {
+          errorMessage = axiosError.response.data.error.message;
+        } else if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        } else if (axiosError.response?.statusText) {
+          errorMessage = axiosError.response.statusText;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
