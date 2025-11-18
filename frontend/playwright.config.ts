@@ -18,11 +18,10 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // webServer disabled - servers are started manually
   // webServer: [
   //   {
   //     command: 'cd ../backend && npm run dev',
-  //     port: 8000,
+  //     url: 'http://localhost:8000/api/v1/auth/login',
   //     reuseExistingServer: true,
   //     timeout: 120 * 1000,
   //     env: {
@@ -37,7 +36,7 @@ export default defineConfig({
   //   },
   //   {
   //     command: 'npm run dev',
-  //     port: 5173,
+  //     port: 3000,
   //     reuseExistingServer: true,
   //     timeout: 120 * 1000,
   //   },
