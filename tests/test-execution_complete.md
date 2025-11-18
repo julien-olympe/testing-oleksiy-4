@@ -145,7 +145,143 @@ This report documents the comprehensive test execution for the visual programmin
 
 ---
 
-## 4. Critical Path End-to-End Test
+## 4. Section 12 - Open Function Editor E2E Tests
+
+### 4.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/12-open-function-editor.md`  
+**Test File Created:** `/workspace/frontend/e2e/12-open-function-editor.spec.ts`
+
+### 4.2 Test Coverage
+
+The section 12 tests cover the following scenarios:
+1. FUNC-OPEN-001: Open Function Editor - Positive Case
+2. FUNC-OPEN-002: Open Function Editor - Negative Case - Permission Denied
+3. FUNC-OPEN-003: Open Function Editor - Verify Function Data Loading
+4. FUNC-OPEN-004: Open Function Editor - Verify Empty Function Display
+
+### 4.3 Execution Status
+
+**Status:** ⚠️ PARTIALLY PASSING (3/4 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/12-open-function-editor.spec.ts --reporter=list`  
+**Test Duration:** ~1.6 minutes  
+**Overall Result:** 3 tests passed, 1 test failed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+
+### 4.4 Detailed Test Results
+
+#### Test 1: FUNC-OPEN-001 - Open Function Editor - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~25 seconds
+- **Details:** 
+  - Successfully created project and function
+  - Successfully opened function editor by double-clicking function
+  - Verified all UI elements (settings icon, RUN button, search bar, brick list, canvas)
+  - Verified three bricks are available in the list
+  - Verified canvas is displayed correctly
+  - No error messages displayed
+
+#### Test 2: FUNC-OPEN-002 - Open Function Editor - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Duration:** ~33 seconds
+- **Details:**
+  - Successfully created project and function as owner
+  - Successfully logged out and logged in as different user
+  - Test correctly handles permission scenarios
+  - Function access restrictions are properly enforced
+
+#### Test 3: FUNC-OPEN-003 - Open Function Editor - Verify Function Data Loading
+- **Status:** ❌ FAILED
+- **Duration:** ~1 minute (timeout)
+- **Issue:** Brick data not loading after reopening function editor
+- **Error:** `expect(brickNodes).toHaveCount(1)` failed - expected 1, got 0
+- **Root Cause:** After adding a brick, navigating back, and reopening the function editor, the brick is not visible on the canvas
+- **Investigation Needed:**
+  - Verify brick is being saved to database correctly
+  - Check if function editor API endpoint returns brick data
+  - Verify React Flow canvas is rendering bricks correctly
+  - Check for timing issues in data loading
+
+#### Test 4: FUNC-OPEN-004 - Open Function Editor - Verify Empty Function Display
+- **Status:** ✅ PASSED
+- **Duration:** ~24 seconds
+- **Details:**
+  - Successfully created empty function
+  - Successfully opened function editor
+  - Verified canvas is empty (no bricks)
+  - Verified grid layout is visible
+  - Verified brick list shows available bricks
+  - No error messages displayed
+
+### 4.5 Issues Fixed During Test Execution
+
+1. **Test File Creation:**
+   - Created comprehensive test file covering all 4 test scenarios
+   - Implemented helper functions for common operations (login, project creation, function creation, etc.)
+
+2. **User Registration/Login:**
+   - Fixed `ensureUserExists` helper to handle existing users gracefully
+   - Added fallback to login if registration fails (user already exists)
+   - Improved error handling for page navigation
+
+3. **Project and Function Creation:**
+   - Fixed `createProject` helper to handle existing projects
+   - Fixed `createFunction` helper to properly rename functions
+   - Added proper waiting for API responses and UI updates
+   - Fixed function count checking to handle multiple existing functions
+
+4. **Project Editor Navigation:**
+   - Fixed `openProjectEditor` helper to ensure Project tab is active
+   - Added fallback navigation if tabs are not visible
+   - Improved waiting logic for project editor to load
+
+5. **Function Editor Navigation:**
+   - Fixed function card selection after navigation
+   - Added fallback to use first function card if name filter doesn't match
+   - Improved waiting for function list to load
+
+6. **Brick Operations:**
+   - Improved `addBrickToFunction` helper to wait for API responses
+   - Added support for different brick name formats (with/without spaces)
+
+7. **Test Timeouts:**
+   - Increased test timeout to 60 seconds per test
+   - Added proper waiting for API responses and UI updates
+
+### 4.6 Remaining Issues
+
+1. **FUNC-OPEN-003 Failure:**
+   - Brick data not persisting/loading correctly after reopening function editor
+   - Needs investigation into:
+     - Backend API endpoint `/api/v1/functions/:id/editor` response format
+     - Frontend function editor data loading logic
+     - React Flow canvas rendering of saved bricks
+     - Database persistence of brick configurations
+
+### 4.7 Recommendations
+
+1. **Immediate Actions:**
+   - Investigate FUNC-OPEN-003 failure - verify brick data is being saved and loaded correctly
+   - Check backend function editor endpoint to ensure it returns brick data
+   - Verify frontend function editor is correctly parsing and rendering brick data
+
+2. **Future Improvements:**
+   - Add more robust error handling for API failures
+   - Improve test isolation (clean up test data between runs)
+   - Add test data setup/teardown helpers
+   - Consider using test fixtures for common setup
+
+---
+
+## 5. Critical Path End-to-End Test
 
 ### 4.1 Test Specification
 
@@ -655,8 +791,9 @@ cd /workspace/frontend && npm run test:e2e
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
 - E2E Tests: 1 (passed - 13/13 steps)
-**Tests Passed:** 3 unit tests + 13 E2E steps  
-**Tests Failed:** 0 unit tests + 0 E2E steps
-**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
+- E2E Tests Section 12: 4 tests (3 passed, 1 needs investigation)
+**Tests Passed:** 3 unit tests + 13 E2E steps + 3 E2E section 12 tests
+**Tests Failed:** 0 unit tests + 0 E2E steps + 1 E2E section 12 test (FUNC-OPEN-003)
+**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + Section 12 test file created and fixes applied
 **Known Issues:**
-- None
+- FUNC-OPEN-003: Brick data not loading after reopening function editor (needs investigation)
