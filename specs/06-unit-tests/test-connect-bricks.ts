@@ -6,7 +6,7 @@
 Test the connect bricks functionality, including successful connection, validation errors, and edge cases.
 
 ### Functions/APIs Being Tested
-- `POST /api/projects/:projectId/functions/:functionId/connections` endpoint
+- `POST /api/projects/:projectId/functions/:id/connections` endpoint
 - Connect bricks service/function
 - Project access verification
 - Brick existence verification
@@ -29,7 +29,7 @@ Test the connect bricks functionality, including successful connection, validati
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 Body: {
   from_brick_id: 'brick-1-uuid',
   from_output_name: 'List',

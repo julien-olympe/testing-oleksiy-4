@@ -6,7 +6,7 @@
 Test the add brick to function functionality, including successful addition, validation errors, and edge cases.
 
 ### Functions/APIs Being Tested
-- `POST /api/projects/:projectId/functions/:functionId/bricks` endpoint
+- `POST /api/projects/:projectId/functions/:id/bricks` endpoint
 - Add brick service/function
 - Project access verification
 - Brick type validation
@@ -28,7 +28,7 @@ Test the add brick to function functionality, including successful addition, val
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 Body: {
   brick_type: 'ListInstancesByDBName',
   position_x: 100,

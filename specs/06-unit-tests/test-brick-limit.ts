@@ -6,7 +6,7 @@
 Test the brick limit functionality, verifying that functions cannot exceed the maximum of 100 bricks per function.
 
 ### Functions/APIs Being Tested
-- `POST /api/projects/:projectId/functions/:functionId/bricks` endpoint (add brick)
+- `POST /api/projects/:projectId/functions/:id/bricks` endpoint (add brick)
 - Brick limit enforcement
 - Brick count verification
 - Connection graph validation performance
@@ -26,7 +26,7 @@ Test the brick limit functionality, verifying that functions cannot exceed the m
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 Body: {
   brick_type: 'ListInstancesByDBName',
   position_x: 100,
@@ -70,7 +70,7 @@ expect(reply.status).toHaveBeenCalledWith(201);
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 Body: {
   brick_type: 'ListInstancesByDBName',
   position_x: 100,
@@ -113,7 +113,7 @@ expect(reply.send).toHaveBeenCalledWith(expect.objectContaining({
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 Body: {
   brick_type: 'ListInstancesByDBName',
   position_x: 100,
@@ -154,7 +154,7 @@ expect(reply.status).toHaveBeenCalledWith(400);
 **Inputs**:
 ```typescript
 Headers: { authorization: 'Bearer valid_jwt_token' }
-Params: { projectId: 'project-uuid', functionId: 'function-uuid' }
+Params: { projectId: 'project-uuid', id: 'function-uuid' }
 ```
 
 **Actions**:
