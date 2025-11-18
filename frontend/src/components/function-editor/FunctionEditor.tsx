@@ -71,10 +71,16 @@ export const FunctionEditor: React.FC = () => {
     if (data) {
       // Load databases for brick configuration
       loadDatabases();
-      // Convert bricks and connections to React Flow nodes and edges
-      convertToFlowElements();
     }
   }, [data]);
+
+  useEffect(() => {
+    if (data) {
+      // Convert bricks and connections to React Flow nodes and edges
+      // This runs when data or databases change
+      convertToFlowElements();
+    }
+  }, [data, databases]);
 
   const loadEditorData = async () => {
     if (!id) return;
