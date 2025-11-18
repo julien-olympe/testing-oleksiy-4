@@ -61,22 +61,7 @@ export const FunctionEditor: React.FC = () => {
     [edges, onEdgesChange]
   );
 
-  useEffect(() => {
-    if (id) {
-      loadEditorData();
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (data) {
-      // Load databases for brick configuration
-      loadDatabases();
-      // Convert bricks and connections to React Flow nodes and edges
-      convertToFlowElements();
-    }
-  }, [data]);
-
-  const loadEditorData = async () => {
+  const loadEditorData = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -93,7 +78,26 @@ export const FunctionEditor: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    // Clear nodes and edges when function ID changes
+    setNodes([]);
+    setEdges([]);
+    setData(null);
+    setDatabases([]);
+    
+    if (id) {
+      loadEditorData();
+    }
+  }, [id, setNodes, setEdges, loadEditorData]);
+
+  useEffect(() => {
+    if (data) {
+      // Load databases for brick configuration
+      loadDatabases();
+    }
+  }, [data]);
 
   const loadDatabases = async () => {
     if (!id || !data) return;
@@ -111,7 +115,24 @@ export const FunctionEditor: React.FC = () => {
     }
   };
 
-  const convertToFlowElements = () => {
+  const handleBrickConfigurationChange = useCallback(async (brickId: string, configuration: Record<string, unknown>) => {
+    try {
+      await apiService.updateBrick(brickId, { configuration });
+      // Reload editor data to get updated configuration
+      await loadEditorData();
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response: { data: { error: { message: string } } } };
+        setError(axiosError.response?.data?.error?.message || 'Failed to update brick configuration');
+      } else {
+        setError('Failed to update brick configuration');
+      }
+    }
+  }, [loadEditorData]);
+
+  // Convert bricks and connections to React Flow nodes and edges
+  // This should run whenever data or databases change
+  useEffect(() => {
     if (!data) return;
 
     const flowNodes: Node[] = data.bricks.map((brick) => ({
@@ -135,7 +156,7 @@ export const FunctionEditor: React.FC = () => {
 
     setNodes(flowNodes);
     setEdges(flowEdges);
-  };
+  }, [data, databases, handleBrickConfigurationChange, setNodes, setEdges]);
 
   const debouncedUpdateBrickPosition = debounce(
     async (brickId: string, positionX: number, positionY: number) => {
@@ -202,20 +223,6 @@ export const FunctionEditor: React.FC = () => {
     [setEdges]
   );
 
-  const handleBrickConfigurationChange = async (brickId: string, configuration: Record<string, unknown>) => {
-    try {
-      await apiService.updateBrick(brickId, { configuration });
-      // Reload editor data to get updated configuration
-      await loadEditorData();
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        setError(axiosError.response?.data?.error?.message || 'Failed to update brick configuration');
-      } else {
-        setError('Failed to update brick configuration');
-      }
-    }
-  };
 
   const handleDragStart = (e: React.DragEvent, brickType: BrickType) => {
     e.dataTransfer.effectAllowed = 'copy';
