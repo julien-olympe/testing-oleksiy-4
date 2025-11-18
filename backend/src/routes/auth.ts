@@ -24,7 +24,7 @@ interface LoginBody {
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   // POST /api/v1/auth/register
   fastify.post<{ Body: RegisterBody }>('/register', async (request, reply) => {
-    const { email, password } = request.body;
+    const { email, password } = request.body as RegisterBody;
 
     // Validate input
     if (!email || !password) {
@@ -91,7 +91,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // POST /api/v1/auth/login
   fastify.post<{ Body: LoginBody }>('/login', async (request, reply) => {
-    const { email, password } = request.body;
+    const { email, password } = request.body as LoginBody;
 
     // Validate input
     if (!email || !password) {

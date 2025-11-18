@@ -1,6 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 // Load environment variables from .env file
 function loadEnv() {
