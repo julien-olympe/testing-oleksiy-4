@@ -31,12 +31,59 @@ export const PermissionsTab: React.FC<PermissionsTabProps> = ({
       setShowAddForm(false);
       onDataChange();
     } catch (err: unknown) {
+      let errorMessage = 'Failed to add permission';
+      
       if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        onError(axiosError.response?.data?.error?.message || 'Failed to add permission');
-      } else {
-        onError('Failed to add permission');
+        const axiosError = err as { 
+          response?: { 
+            data?: { 
+              error?: { message?: string } | string;
+              message?: string;
+            };
+            status?: number;
+          };
+          message?: string;
+        };
+        
+        // Try to extract error message from various possible locations
+        if (axiosError.response?.data) {
+          const data = axiosError.response.data;
+          if (typeof data.error === 'object' && data.error?.message) {
+            errorMessage = data.error.message;
+          } else if (typeof data.error === 'string') {
+            errorMessage = data.error;
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        }
+        
+        // For 404 errors, check if we can get a more specific message
+        if (axiosError.response?.status === 404) {
+          if (errorMessage === 'Failed to add permission' || errorMessage === 'Not Found' || errorMessage.includes('Not Found')) {
+            errorMessage = 'User not found';
+          }
+        }
+        
+        // For 400 errors with USER_ALREADY_HAS_PERMISSION code, use the message
+        if (axiosError.response?.status === 400 && axiosError.response?.data) {
+          const data = axiosError.response.data;
+          if (data.code === 'USER_ALREADY_HAS_PERMISSION' && data.message) {
+            errorMessage = data.message;
+          } else if (errorMessage === 'Failed to add permission' || errorMessage === 'Bad Request') {
+            // Try to get message from error object
+            if (data.message) {
+              errorMessage = data.message;
+            }
+          }
+        }
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        const error = err as { message?: string };
+        if (error.message) {
+          errorMessage = error.message;
+        }
       }
+      
+      onError(errorMessage);
     } finally {
       setLoading(false);
     }

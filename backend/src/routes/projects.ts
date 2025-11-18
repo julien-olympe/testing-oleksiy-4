@@ -271,6 +271,12 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         throw new NotFoundError('Project');
       }
 
+      // Get owner's email to include in permissions list
+      const owner = await prisma.user.findUnique({
+        where: { id: project.ownerId },
+        select: { id: true, email: true },
+      });
+
       // Get default database (system database)
       const defaultDatabase = await prisma.database.findFirst({
         where: {
@@ -338,11 +344,20 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: f.createdAt.toISOString(),
           updatedAt: f.updatedAt.toISOString(),
         })),
-        permissions: project.permissions.map((p) => ({
-          userId: p.userId,
-          userEmail: p.user.email,
-          createdAt: p.createdAt.toISOString(),
-        })),
+        permissions: [
+          // Include owner first
+          ...(owner ? [{
+            userId: owner.id,
+            userEmail: owner.email,
+            createdAt: project.createdAt.toISOString(),
+          }] : []),
+          // Then include other permissions
+          ...project.permissions.map((p) => ({
+            userId: p.userId,
+            userEmail: p.user.email,
+            createdAt: p.createdAt.toISOString(),
+          })),
+        ],
         databases: allDatabases.map((d) => ({
           id: d.id,
           name: d.name,
