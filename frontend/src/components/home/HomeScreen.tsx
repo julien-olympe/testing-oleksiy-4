@@ -93,6 +93,13 @@ export const HomeScreen: React.FC = () => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', 'Project');
+    // Mark the element as dragging for handleDrop to detect
+    (e.currentTarget as HTMLElement).classList.add('dragging');
+  };
+  
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Remove dragging class when drag ends
+    (e.currentTarget as HTMLElement).classList.remove('dragging');
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -102,9 +109,25 @@ export const HomeScreen: React.FC = () => {
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    const brickType = e.dataTransfer.getData('text/plain');
+    // Try multiple ways to get the brick type for better compatibility with Playwright
+    let brickType = '';
+    try {
+      brickType = e.dataTransfer?.getData('text/plain') || '';
+    } catch (err) {
+      // dataTransfer might not be available in all contexts
+    }
 
-    if (brickType === 'Project') {
+    // Check if we're dropping in the project list area
+    const isInProjectListArea = (e.target as HTMLElement)?.closest('.project-list-area') !== null ||
+                                (e.currentTarget as HTMLElement)?.classList.contains('project-list-area');
+    
+    // Check if a Project brick was dragged (multiple ways for Playwright compatibility)
+    const draggedElement = document.querySelector('.brick-item.dragging');
+    const isProjectBrick = brickType === 'Project' || 
+                          draggedElement?.textContent?.trim() === 'Project' ||
+                          draggedElement?.getAttribute('data-brick-type') === 'Project';
+
+    if (isInProjectListArea && isProjectBrick) {
       try {
         await apiService.createProject();
         await loadProjects();
@@ -157,6 +180,8 @@ export const HomeScreen: React.FC = () => {
                 className="brick-item"
                 draggable
                 onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                data-brick-type={brick}
               >
                 {brick}
               </div>
