@@ -802,3 +802,129 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 11. Run Function End-to-End Tests (Section 21)
+
+### 11.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/21-run-function.md`  
+**Test IDs:** FUNC-RUN-001 through FUNC-RUN-007  
+**Test Names:**
+- FUNC-RUN-001: Run Function - Positive Case
+- FUNC-RUN-002: Run Function - Negative Case - Missing Required Inputs
+- FUNC-RUN-003: Run Function - Negative Case - Invalid Brick Connections
+- FUNC-RUN-004: Run Function - Negative Case - Execution Failed
+- FUNC-RUN-005: Run Function - Negative Case - Permission Denied
+- FUNC-RUN-006: Run Function - Verify Console Output Format
+- FUNC-RUN-007: Run Function - Run Multiple Times
+
+### 11.2 Test File Created
+
+**Status:** ✅ Test file created  
+**Test File:** `/workspace/frontend/e2e/21-run-function.spec.ts`  
+**Coverage:** All 7 test scenarios from specification
+
+### 11.3 Execution Status
+
+**Status:** ⚠️ IN PROGRESS
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/21-run-function.spec.ts --reporter=list`  
+**Test Duration:** ~3-5 minutes per test (estimated)  
+**Overall Result:** Tests created, execution in progress
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+- ✅ Prisma client: Generated
+
+### 11.4 Test Implementation Progress
+
+**Test FUNC-RUN-001: Run Function - Positive Case**
+- **Status:** ⚠️ IN PROGRESS
+- **Progress:** Test setup function created and most steps working
+- **Issues Fixed:**
+  1. ✅ Project renaming - Updated to use rename button instead of double-click
+  2. ✅ Function creation - Fixed tab navigation to Project tab first
+  3. ✅ Brick selectors - Updated to use formatted labels instead of type names
+  4. ✅ Database instance creation - Fixed button selector and input handling
+  5. ⚠️ Database parameter selection - Dropdown interaction needs refinement
+- **Remaining Issues:**
+  - Database select dropdown not appearing consistently after button click
+  - May need additional wait for databases to load or state update handling
+
+**Test FUNC-RUN-002 through FUNC-RUN-007:**
+- **Status:** ⏳ PENDING
+- **Note:** Test structure created, awaiting completion of FUNC-RUN-001
+
+### 11.5 Issues Found and Fixes Applied
+
+1. **Project Renaming Selector:**
+   - Issue: Test was using double-click which didn't work
+   - Fix: Updated to use rename button (`.project-action-button`) pattern from critical-path test
+   - Status: ✅ Fixed
+
+2. **Function Tab Navigation:**
+   - Issue: Test was trying to click non-existent "Function" button
+   - Fix: Updated to click "Project" tab first, then drag Function brick
+   - Status: ✅ Fixed
+
+3. **Brick Selectors:**
+   - Issue: Test was using raw type names (e.g., "ListInstancesByDB")
+   - Fix: Updated to use formatted labels (e.g., "List instances by DB name")
+   - Status: ✅ Fixed
+
+4. **Database Instance Creation:**
+   - Issue: Button selector and input handling incorrect
+   - Fix: Updated to use `.create-instance-button` and `.property-input` selectors
+   - Status: ✅ Fixed
+
+5. **Database Parameter Selection:**
+   - Issue: Database select button click being intercepted by other elements
+   - Fix: Added force click and scroll into view
+   - Status: ⚠️ Partially fixed - dropdown visibility needs refinement
+
+### 11.6 Test Structure
+
+The test file includes:
+- Helper function `loginUser()` for user authentication
+- Helper function `setupFunctionWithBricks()` for comprehensive function setup:
+  - Project creation and renaming
+  - Database instance creation
+  - Function creation and renaming
+  - Brick addition to canvas
+  - Database parameter configuration
+  - Brick connection creation
+- Console log capture for output verification
+- All 7 test scenarios with proper preconditions and expected results
+
+### 11.7 Recommendations
+
+1. **Immediate Actions:**
+   - Complete FUNC-RUN-001 test execution
+   - Fix database dropdown interaction issue
+   - Execute remaining test scenarios (FUNC-RUN-002 through FUNC-RUN-007)
+
+2. **Future Improvements:**
+   - Consider breaking down `setupFunctionWithBricks()` into smaller, reusable functions
+   - Add better error handling and retry logic for flaky interactions
+   - Consider using test fixtures for shared setup
+   - Add more robust waiting strategies for async state updates
+
+### 11.8 Next Steps
+
+1. ✅ Test file created with all 7 scenarios
+2. ⚠️ Fix database dropdown interaction in FUNC-RUN-001
+3. ⏳ Complete execution of FUNC-RUN-001
+4. ⏳ Execute FUNC-RUN-002 through FUNC-RUN-007
+5. ⏳ Update test-execution_complete.md with final results
+
+---
+
+**Report Updated:** 2025-01-17  
+**Section 21 Status:** Test file created, execution in progress
