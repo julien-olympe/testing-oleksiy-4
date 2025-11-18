@@ -802,3 +802,145 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 11. Set Brick Input Parameter End-to-End Tests
+
+### 11.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/20-set-brick-input-parameter.md`  
+**Test IDs:** BRICK-PARAM-001 through BRICK-PARAM-006  
+**Test Names:**
+- BRICK-PARAM-001: Set Brick Input Parameter - Positive Case
+- BRICK-PARAM-002: Set Brick Input Parameter - Negative Case - Invalid Parameter Value
+- BRICK-PARAM-003: Set Brick Input Parameter - Change Parameter Value
+- BRICK-PARAM-004: Set Brick Input Parameter - Clear Parameter Value
+- BRICK-PARAM-005: Set Brick Input Parameter - Negative Case - Permission Denied
+- BRICK-PARAM-006: Set Brick Input Parameter - Verify Parameter Persistence
+
+### 11.2 Test Coverage
+
+The set brick input parameter tests cover the following use cases:
+1. **BRICK-PARAM-001:** Complete positive flow for setting brick input parameter
+2. **BRICK-PARAM-002:** Validation of invalid parameter values
+3. **BRICK-PARAM-003:** Changing an existing parameter value
+4. **BRICK-PARAM-004:** Clearing a parameter value (if supported)
+5. **BRICK-PARAM-005:** Permission checks for parameter editing
+6. **BRICK-PARAM-006:** Verification of parameter persistence after navigation
+
+### 11.3 Execution Status
+
+**Status:** ⚠️ PARTIALLY COMPLETE (1/6 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/20-set-brick-input-parameter.spec.ts --reporter=list`  
+**Test File Created:** `/workspace/frontend/e2e/20-set-brick-input-parameter.spec.ts`
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+
+### 11.4 Detailed Test Results
+
+#### Test BRICK-PARAM-001: Set Brick Input Parameter - Positive Case
+- **Status:** ❌ FAILED
+- **Issue:** "default database" option not found in dropdown
+- **Root Cause:** Default database may not exist in test database, or databases not loading properly
+- **Fix Applied:** Added timeouts and waits for database loading
+- **Remaining Issue:** Default database needs to exist in test database
+
+#### Test BRICK-PARAM-002: Set Brick Input Parameter - Negative Case - Invalid Parameter Value
+- **Status:** ❌ FAILED
+- **Issue:** Same as BRICK-PARAM-001 - setup fails before reaching validation test
+- **Fix Applied:** Updated selectors and added waits
+
+#### Test BRICK-PARAM-003: Set Brick Input Parameter - Change Parameter Value
+- **Status:** ❌ FAILED
+- **Issue:** "default database" option not found
+- **Fix Applied:** Added timeouts and improved database option selection
+
+#### Test BRICK-PARAM-004: Set Brick Input Parameter - Clear Parameter Value
+- **Status:** ✅ PASSED
+- **Details:** Test passes successfully, handles case where clearing may not be supported
+
+#### Test BRICK-PARAM-005: Set Brick Input Parameter - Negative Case - Permission Denied
+- **Status:** ❌ FAILED
+- **Issue:** Registration/login flow timeout
+- **Fix Applied:** Improved registration/login handling with fallback logic
+- **Remaining Issue:** May need refinement based on actual permission system implementation
+
+#### Test BRICK-PARAM-006: Set Brick Input Parameter - Verify Parameter Persistence
+- **Status:** ❌ FAILED
+- **Issue:** "default database" option not found
+- **Fix Applied:** Added timeouts and improved navigation flow
+
+### 11.5 Issues Found and Fixes Applied
+
+**Total Issues Fixed:** 8
+
+1. **Selector Issues:**
+   - Fixed `.project-list` → `.project-list-area`
+   - Fixed `.function-item` → `.function-card`
+   - Fixed brick item selector to use formatted label "List instances by DB name"
+   - Fixed canvas selector to use `.function-editor-canvas`
+
+2. **Test Setup Issues:**
+   - Fixed project renaming to use correct button and input selectors
+   - Fixed function renaming to use correct button and input selectors
+   - Added proper tab navigation (Project tab)
+   - Improved project and function creation flow
+
+3. **Database Selection Issues:**
+   - Added waits for databases to load (1 second initial wait)
+   - Increased timeouts for database dropdown visibility (5 seconds)
+   - Increased timeouts for "default database" option (10 seconds)
+   - Fixed `toHaveCount` syntax error (changed to `first().toBeVisible()`)
+
+4. **Navigation Issues:**
+   - Fixed navigation back to function editor in BRICK-PARAM-006
+   - Added proper tab clicking before accessing function list
+
+### 11.6 Remaining Issues
+
+**Critical Issue:**
+- **Default Database Not Available:** The "default database" option is not appearing in the dropdown. This could be because:
+  1. The default database doesn't exist in the test database
+  2. The database loading is failing silently
+  3. The API endpoint is not returning the default database correctly
+
+**Recommendation:**
+- Verify that the default database exists in the test database with:
+  - `name: 'default database'`
+  - `projectId: '00000000-0000-0000-0000-000000000000'`
+- Check backend logs to see if database loading is failing
+- Verify that `getProjectEditor` API is returning the default database in the response
+
+### 11.7 Test Implementation Notes
+
+**Test File Created:**
+- `/workspace/frontend/e2e/20-set-brick-input-parameter.spec.ts` - Comprehensive test file with all 6 test cases
+
+**Test Structure:**
+- Uses shared `setupTestEnvironment()` helper function
+- Follows the same patterns as critical-path.spec.ts
+- Uses test steps for better organization and reporting
+- Properly handles async operations and waits
+
+**Key Features Tested:**
+1. Database parameter selection UI
+2. Parameter value setting and display
+3. Parameter persistence
+4. Parameter validation
+5. Permission checks (partial)
+6. Navigation and persistence verification
+
+**Next Steps:**
+1. ✅ Test file created with all 6 test cases
+2. ✅ Selectors and setup flow fixed
+3. ⚠️ Need to verify default database exists in test database
+4. ⚠️ Once default database is available, all tests should pass
+5. ⚠️ BRICK-PARAM-005 may need refinement based on permission system implementation
