@@ -802,3 +802,197 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 11. Create Database Instance End-to-End Tests
+
+### 11.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/16-create-database-instance.md`  
+**Test IDs:** DB-INSTANCE-CREATE-001, DB-INSTANCE-CREATE-002, DB-INSTANCE-CREATE-003, DB-INSTANCE-CREATE-004  
+**Test Names:** 
+- DB-INSTANCE-CREATE-001: Create Database Instance - Positive Case
+- DB-INSTANCE-CREATE-002: Create Database Instance - Negative Case - Permission Denied
+- DB-INSTANCE-CREATE-003: Create Database Instance - Verify Multiple Instances Can Be Created
+- DB-INSTANCE-CREATE-004: Create Database Instance - Verify Instance Persistence
+
+### 11.2 Test Coverage
+
+The create database instance tests cover the following use cases:
+1. **DB-INSTANCE-CREATE-001:** Complete positive flow for creating a database instance
+2. **DB-INSTANCE-CREATE-002:** Negative case verifying permission restrictions for instance creation
+3. **DB-INSTANCE-CREATE-003:** Verification that multiple instances can be created for the same database type
+4. **DB-INSTANCE-CREATE-004:** Verification that instances persist after navigation
+
+### 11.3 Execution Status
+
+**Status:** ⚠️ PARTIAL (3/4 tests passing, 1 test failing due to implementation limitation)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/16-create-database-instance.spec.ts --reporter=list`  
+**Test Duration:** ~12-19 seconds per test  
+**Overall Result:** 3 tests passed, 1 test failed
+
+**Environment Setup:**
+- ✅ Backend service: Running on port 3000 (started via Playwright webServer)
+- ✅ Frontend service: Running on port 5173 (started via Playwright webServer)
+- ✅ Playwright E2E test framework: Configured and browsers installed
+- ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
+- ✅ Environment variables: Loaded from /workspace/.env
+
+**Test Configuration:**
+- Playwright config automatically starts backend and frontend services
+- Chromium browser used for testing
+- Test file created: `/workspace/frontend/e2e/16-create-database-instance.spec.ts`
+
+### 11.4 Detailed Test Results
+
+#### Test DB-INSTANCE-CREATE-001: Create Database Instance - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** ~11-12 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user with test credentials
+  2. ✅ Navigate to TestProject (create if doesn't exist)
+  3. ✅ Click Database tab
+  4. ✅ Verify user is in Project Editor with Database tab active
+  5. ✅ Verify "default database" is selected
+  6. ✅ Verify instances list is displayed
+  7. ✅ Verify "Create instance" button is displayed
+  8. ✅ Click "Create instance" button
+  9. ✅ Verify new instance is created
+  10. ✅ Verify instance is added to instances list
+  11. ✅ Verify instance has input field for string property
+  12. ✅ Verify instance is assigned to TestProject
+  13. ✅ Verify instance is assigned to "default database" type
+  14. ✅ Verify no error messages are displayed
+- **Expected Results:** All verified ✅
+- **Issues Fixed:**
+  - Added wait for rename input field to be visible when creating new projects
+  - Improved project creation handling to avoid timing issues
+
+#### Test DB-INSTANCE-CREATE-002: Create Database Instance - Negative Case - Permission Denied
+- **Status:** ❌ FAILED (Implementation Limitation)
+- **Duration:** ~16 seconds
+- **Test Steps Covered:**
+  1. ✅ Login as owner and create SharedProject
+  2. ✅ Add permission for user@example.com
+  3. ✅ Logout and login as user@example.com
+  4. ✅ Navigate to SharedProject (project is visible)
+  5. ✅ Verify user is in Project Editor with Database tab active
+  6. ✅ Verify "default database" is selected
+  7. ❌ Verify "Create instance" button is not available or disabled
+- **Expected Results:** 
+  - "Create instance" button should be disabled or not visible for users without create permission
+  - **Actual Result:** Button is enabled (user has full permissions)
+- **Root Cause:** 
+  - The current implementation grants full permissions (including create) when a user is added to a project
+  - The test specification requires granular permissions (view but NOT create), which is not supported by the current permission system
+- **Impact:** 
+  - Test fails because the implementation doesn't support the required granular permission model
+  - This is an implementation limitation, not a test issue
+- **Recommendation:** 
+  - Implement granular permissions in the backend to support view-only access
+  - Or update the test specification to match the current implementation behavior
+
+#### Test DB-INSTANCE-CREATE-003: Create Database Instance - Verify Multiple Instances Can Be Created
+- **Status:** ✅ PASSED
+- **Duration:** ~12-13 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user with test credentials
+  2. ✅ Navigate to TestProject
+  3. ✅ Click Database tab
+  4. ✅ Select "default database"
+  5. ✅ Verify user is in Project Editor with Database tab active
+  6. ✅ Verify existing instances are displayed
+  7. ✅ Count existing instances
+  8. ✅ Click "Create instance" button
+  9. ✅ Verify new instance is created
+  10. ✅ Verify new instance appears in list
+  11. ✅ Verify instance count increased
+  12. ✅ Verify all instances are displayed
+  13. ✅ Verify each instance has unique identifier
+  14. ✅ Verify no error messages are displayed
+- **Expected Results:** All verified ✅
+
+#### Test DB-INSTANCE-CREATE-004: Create Database Instance - Verify Instance Persistence
+- **Status:** ✅ PASSED
+- **Duration:** ~12-13 seconds
+- **Test Steps Covered:**
+  1. ✅ Login user with test credentials
+  2. ✅ Navigate to TestProject
+  3. ✅ Click Database tab
+  4. ✅ Select "default database"
+  5. ✅ Verify user is in Project Editor with Database tab active
+  6. ✅ Click "Create instance" button
+  7. ✅ Verify new instance is created and displayed
+  8. ✅ Navigate away from Database tab (click Project tab)
+  9. ✅ Navigate back to Database tab
+  10. ✅ Verify Database tab is active
+  11. ✅ Verify "default database" is selected
+  12. ✅ Verify instance is still displayed after navigation
+  13. ✅ Verify instance data is persisted
+- **Expected Results:** All verified ✅
+
+### 11.5 Terminal Output Summary
+
+**Test Execution Command:**
+```bash
+cd /workspace/frontend && npx playwright test e2e/16-create-database-instance.spec.ts --reporter=list
+```
+
+**Key Output:**
+- Services started successfully via Playwright webServer configuration
+- Backend: Running on http://localhost:3000
+- Frontend: Running on http://localhost:5173
+- Browser: Chromium 141.0.7390.37 (playwright build v1194)
+- Test duration: ~12-19 seconds per test
+
+**Error Messages:**
+- Test DB-INSTANCE-CREATE-002: Button is enabled when it should be disabled (implementation limitation)
+
+**Test Artifacts Generated:**
+- Screenshot and video for failed test DB-INSTANCE-CREATE-002
+
+### 11.6 Test Implementation Notes
+
+**Test File Created:**
+- `/workspace/frontend/e2e/16-create-database-instance.spec.ts` - New test file created based on specifications
+
+**Test Structure:**
+- Uses Playwright test framework
+- Follows the same patterns as other E2E tests
+- Uses test steps for better organization and reporting
+- Properly handles async operations and waits
+
+**Key Features Tested:**
+1. Database instance creation flow
+2. Instance assignment to project and database type
+3. Multiple instance creation
+4. Instance persistence after navigation
+5. Permission restrictions (tested but not fully supported by implementation)
+
+**Issues Found:**
+1. **Permission Granularity:** The current implementation doesn't support granular permissions (view but not create). When a user is added to a project, they receive full permissions including the ability to create database instances.
+2. **Project Creation Timing:** Fixed by adding wait for rename input field visibility
+
+**Fixes Applied:**
+1. Added wait for rename input field when creating new projects
+2. Updated permission adding logic to match critical-path test pattern
+3. Added waits for project list loading after login
+
+---
+
+**Report Updated:** 2025-01-17  
+**Total Execution Time:** ~25 minutes  
+**Tests Executed:** 
+- Unit Tests: 3 (all passed)
+- E2E Tests: 7 (6 passed, 1 failed due to implementation limitation)
+  - Critical Path: 1 test (13/13 steps passing)
+  - Logout User: 2 tests (2/2 tests passing)
+  - Create Database Instance: 4 tests (3/4 passing, 1 failing due to implementation limitation)
+**Tests Passed:** 3 unit tests + 19 E2E steps/tests  
+**Tests Failed:** 0 unit tests + 1 E2E test (implementation limitation)
+**Test Fixes Applied:** 16 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
+**Known Issues:**
+- Granular permissions not supported: Current implementation grants full permissions when user is added to project, but test specification requires view-only permissions for DB-INSTANCE-CREATE-002
