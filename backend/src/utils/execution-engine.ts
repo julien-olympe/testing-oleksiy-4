@@ -45,10 +45,21 @@ export class ExecutionEngine {
       throw new BusinessLogicError('EXECUTION_FAILED', 'Function has no bricks to execute');
     }
 
-    // Normalize configurations (ensure they're always objects, not null)
+    // Normalize configurations (ensure they're always plain objects, not null, arrays, or other types)
     for (const brick of func.bricks) {
-      if (!brick.configuration || typeof brick.configuration !== 'object') {
+      // Handle Prisma JsonValue type - ensure it's a plain object
+      if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
         brick.configuration = {};
+      } else {
+        // Ensure it's a plain object by creating a new object from it
+        // This handles cases where Prisma might return JsonObject or other JsonValue types
+        try {
+          brick.configuration = JSON.parse(JSON.stringify(brick.configuration)) as Record<string, unknown>;
+        } catch (e) {
+          // If parsing fails, default to empty object
+          console.warn(`[ExecutionEngine] Failed to parse configuration for brick ${brick.id}, using empty object:`, e);
+          brick.configuration = {};
+        }
       }
     }
 
@@ -125,32 +136,44 @@ export class ExecutionEngine {
       if (brick.type === 'ListInstancesByDB') {
         console.log(`[ExecutionEngine] Validating ListInstancesByDB brick: ${brick.id}`);
         console.log(`[ExecutionEngine] Configuration:`, JSON.stringify(brick.configuration));
-        const config = brick.configuration as { databaseName?: string };
-        if (!config) {
-          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - configuration is null/undefined`);
+        console.log(`[ExecutionEngine] Configuration type:`, typeof brick.configuration);
+        console.log(`[ExecutionEngine] Configuration is array:`, Array.isArray(brick.configuration));
+        
+        // Ensure configuration is a plain object
+        if (!brick.configuration || typeof brick.configuration !== 'object' || Array.isArray(brick.configuration)) {
+          console.log(`[ExecutionEngine] ListInstancesByDB validation failed - configuration is not a valid object`);
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
-            reason: 'Configuration is null or undefined',
+            reason: 'Configuration is not a valid object',
             configuration: brick.configuration,
+            configurationType: typeof brick.configuration,
           });
         }
-        if (!config.databaseName || typeof config.databaseName !== 'string' || config.databaseName.trim() === '') {
+        
+        // Convert to plain object to ensure proper property access
+        const config = brick.configuration as Record<string, unknown>;
+        const databaseName = config.databaseName;
+        
+        console.log(`[ExecutionEngine] databaseName value:`, databaseName);
+        console.log(`[ExecutionEngine] databaseName type:`, typeof databaseName);
+        console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(config));
+        
+        if (!databaseName || typeof databaseName !== 'string' || databaseName.trim() === '') {
           console.log(`[ExecutionEngine] ListInstancesByDB validation failed - databaseName is missing or empty`);
           console.log(`[ExecutionEngine] Full configuration object:`, JSON.stringify(config, null, 2));
-          console.log(`[ExecutionEngine] Configuration keys:`, Object.keys(config));
           throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
             brickId: brick.id,
             brickType: brick.type,
             missingInputs: ['databaseName'],
-            reason: `databaseName is ${config.databaseName === undefined ? 'undefined' : config.databaseName === null ? 'null' : `'${config.databaseName}' (type: ${typeof config.databaseName})`}`,
+            reason: `databaseName is ${databaseName === undefined ? 'undefined' : databaseName === null ? 'null' : `'${String(databaseName)}' (type: ${typeof databaseName})`}`,
             configuration: brick.configuration,
             configKeys: Object.keys(config),
             fullConfig: config,
           });
         }
-        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${config.databaseName}`);
+        console.log(`[ExecutionEngine] ListInstancesByDB validation passed - databaseName: ${databaseName}`);
       }
     }
 
@@ -253,8 +276,9 @@ export class ExecutionEngine {
     _context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
-    const config = brick.configuration as { databaseName?: string };
-    const databaseName = config?.databaseName;
+    // Configuration should already be normalized to a plain object by executeFunction
+    const config = brick.configuration as Record<string, unknown>;
+    const databaseName = config?.databaseName as string | undefined;
 
     if (!databaseName) {
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
