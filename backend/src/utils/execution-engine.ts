@@ -119,7 +119,7 @@ export class ExecutionEngine {
     bricks: Array<{
       id: string;
       connectionsFrom: Array<{ toBrickId: string }>;
-      connectionsTo: Array<{ fromBrickId: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     }>
   ): string[] {
     const inDegree = new Map<string, number>();
@@ -288,7 +288,7 @@ export class ExecutionEngine {
   private static executeGetFirstInstance(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
@@ -331,7 +331,7 @@ export class ExecutionEngine {
   private static executeLogInstanceProps(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
