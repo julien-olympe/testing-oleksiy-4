@@ -1,3 +1,8 @@
+import { config as dotenvConfig } from 'dotenv';
+import { resolve } from 'path';
+// Load .env from workspace root (../.env relative to backend directory)
+// When running from /workspace/backend, ../.env points to /workspace/.env
+dotenvConfig({ path: resolve(process.cwd(), '../.env') });
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
