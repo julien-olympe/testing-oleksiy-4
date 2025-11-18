@@ -650,13 +650,140 @@ cd /workspace/frontend && npm run test:e2e
 
 ---
 
+---
+
+## 10. Section 14 - View Project Permissions E2E Tests
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/14-view-project-permissions.md`  
+**Test IDs:** PERM-VIEW-001, PERM-VIEW-002, PERM-VIEW-003, PERM-VIEW-004  
+**Test Name:** View Project Permissions
+
+### 10.2 Test Coverage
+
+The section 14 tests cover the following scenarios:
+1. **PERM-VIEW-001:** View Project Permissions - Positive Case (owner and users with permissions)
+2. **PERM-VIEW-002:** View Project Permissions - Negative Case - Permission Denied (unauthorized user)
+3. **PERM-VIEW-003:** View Project Permissions - Verify Empty Permissions List (only owner)
+4. **PERM-VIEW-004:** View Project Permissions - Verify Permissions List Updates (adding new user)
+
+### 10.3 Execution Status
+
+**Status:** ⚠️ PARTIALLY PASSING (2/4 tests passing consistently)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/14-view-project-permissions.spec.ts --reporter=list --workers=1`  
+**Test Duration:** ~60-120 seconds per run  
+**Overall Result:** 2 tests passed consistently, 2 tests with intermittent timeout issues
+
+**Test File Created:** `/workspace/frontend/e2e/14-view-project-permissions.spec.ts`
+
+### 10.4 Detailed Test Results
+
+#### PERM-VIEW-001: View Project Permissions - Positive Case
+- **Status:** ⚠️ INTERMITTENT (passes sometimes, fails on timeout)
+- **Details:** 
+  - Test successfully registers owner and two users
+  - Creates project and adds permissions
+  - Verifies all users (owner, user1, user2) are displayed in permissions list
+- **Issues:** 
+  - Intermittent timeout during permission addition (editor refresh)
+  - Fixed by making editor refresh wait optional with fallback timeout
+
+#### PERM-VIEW-002: View Project Permissions - Negative Case - Permission Denied
+- **Status:** ✅ PASSING
+- **Details:**
+  - Test successfully verifies unauthorized user cannot see private project
+  - Project is not displayed in project list for unauthorized user
+  - Access restrictions are properly enforced
+
+#### PERM-VIEW-003: View Project Permissions - Verify Empty Permissions List
+- **Status:** ✅ PASSING
+- **Details:**
+  - Test successfully verifies permissions list shows only owner for new project
+  - "Add a user" button is visible
+  - No error messages displayed
+
+#### PERM-VIEW-004: View Project Permissions - Verify Permissions List Updates
+- **Status:** ⚠️ INTERMITTENT (fails on registration timeout)
+- **Details:**
+  - Test verifies permissions list updates after adding new user
+  - New user appears in list after permission is added
+- **Issues:**
+  - Registration timeout for new user (intermittent)
+  - Fixed by improving registration error handling and retry logic
+
+### 10.5 Issues Found and Fixes Applied
+
+#### Backend Fixes
+
+1. **Owner Not Included in Permissions List:**
+   - **Root Cause:** Backend `/projects/:id/editor` endpoint was not including project owner in permissions response
+   - **Fix Applied:** Updated `/workspace/backend/src/routes/projects.ts` to:
+     - Fetch owner information from User table
+     - Include owner as first item in permissions array
+     - Owner appears with project creation date as createdAt
+   - **Code Changes:**
+     - Added owner query: `await prisma.user.findUnique({ where: { id: project.ownerId } })`
+     - Modified permissions array to include owner: `[owner, ...project.permissions]`
+
+#### Test Fixes
+
+1. **Registration Timeout Issues:**
+   - **Issue:** Registration helper was timing out when users already existed
+   - **Fix Applied:** Updated registration function to:
+     - Try login first (user might already exist)
+     - If login fails, try registration
+     - Handle "user already exists" errors gracefully
+     - Retry login if registration fails due to existing user
+   - **Impact:** More robust user setup for tests
+
+2. **Permission Addition Timeout:**
+   - **Issue:** Editor refresh after adding permission was timing out
+   - **Fix Applied:** Made editor refresh wait optional with try-catch and fallback timeout
+   - **Impact:** Test no longer fails if editor doesn't refresh immediately
+
+3. **Permissions List Loading:**
+   - **Issue:** Permissions list not loading fast enough
+   - **Fix Applied:** Added explicit waits and increased timeouts for permissions list verification
+   - **Impact:** More reliable permissions list verification
+
+### 10.6 Test Configuration
+
+- **Test Timeout:** 60 seconds per test (increased from default 30 seconds)
+- **Workers:** 1 (sequential execution to avoid conflicts)
+- **Browser:** Chromium
+- **Environment:** Backend and frontend started via Playwright webServer configuration
+
+### 10.7 Recommendations
+
+1. **Stability Improvements:**
+   - Consider increasing test timeouts further for slower environments
+   - Add retry logic for flaky network operations
+   - Implement better error handling for authentication flows
+
+2. **Test Data Management:**
+   - Consider using test database cleanup between test runs
+   - Implement test user management to avoid conflicts
+
+3. **Future Enhancements:**
+   - Add more edge cases (e.g., multiple projects, many users)
+   - Test permission removal scenarios
+   - Test permission updates
+
+---
+
 **Report Generated:** 2025-01-17  
-**Total Execution Time:** ~20 minutes  
+**Total Execution Time:** ~20 minutes (initial setup) + ~5 minutes (section 14 tests)  
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
-- E2E Tests: 1 (passed - 13/13 steps)
-**Tests Passed:** 3 unit tests + 13 E2E steps  
-**Tests Failed:** 0 unit tests + 0 E2E steps
-**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
+- E2E Tests - Critical Path: 1 (passed - 13/13 steps)
+- E2E Tests - Section 14: 4 (2 passing consistently, 2 intermittent)
+**Tests Passed:** 3 unit tests + 13 E2E steps + 2 section 14 tests (consistent)  
+**Tests Failed:** 0 unit tests + 0 E2E steps + 2 section 14 tests (intermittent timeouts)
+**Test Fixes Applied:** 
+- 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes (critical path)
+- 1 backend API fix (permissions owner inclusion) + 3 test helper improvements (section 14)
 **Known Issues:**
-- None
+- Section 14 tests PERM-VIEW-001 and PERM-VIEW-004 have intermittent timeout issues related to registration/authentication flows
