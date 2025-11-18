@@ -34,7 +34,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const functionId = (request.params as { functionId: string }).functionId;
-      const { type, positionX, positionY, configuration } = request.body;
+      const { type, positionX, positionY, configuration } = request.body as CreateBrickBody;
 
       validateUUID(functionId, 'functionId');
 
@@ -124,7 +124,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const brickId = (request.params as { id: string }).id;
-      const { positionX, positionY, configuration } = request.body;
+      const { positionX, positionY, configuration } = request.body as UpdateBrickBody;
 
       validateUUID(brickId, 'id');
 
@@ -254,7 +254,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
     async (request: AuthenticatedRequest, reply) => {
       const userId = request.userId!;
       const fromBrickId = (request.params as { id: string }).id;
-      const { fromOutputName, toBrickId, toInputName } = request.body;
+      const { fromOutputName, toBrickId, toInputName } = request.body as CreateConnectionBody;
 
       validateUUID(fromBrickId, 'id');
       validateUUID(toBrickId, 'toBrickId');

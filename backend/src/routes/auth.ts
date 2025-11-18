@@ -1,7 +1,7 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { prisma } from '../db/client';
 import { AuthUtils, TokenBlacklist } from '../utils/auth';
-import { validateEmail, validatePassword, validateUUID } from '../utils/validation';
+import { validateEmail, validatePassword } from '../utils/validation';
 import {
   ValidationError,
   AuthenticationError,
@@ -24,7 +24,7 @@ interface LoginBody {
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   // POST /api/v1/auth/register
   fastify.post<{ Body: RegisterBody }>('/register', async (request, reply) => {
-    const { email, password } = request.body;
+    const { email, password } = request.body as { email: string; password: string };
 
     // Validate input
     if (!email || !password) {
@@ -91,7 +91,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // POST /api/v1/auth/login
   fastify.post<{ Body: LoginBody }>('/login', async (request, reply) => {
-    const { email, password } = request.body;
+    const { email, password } = request.body as { email: string; password: string };
 
     // Validate input
     if (!email || !password) {

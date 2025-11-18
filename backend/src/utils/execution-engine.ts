@@ -202,7 +202,7 @@ export class ExecutionEngine {
 
   private static async executeListInstancesByDB(
     brick: { id: string; configuration: unknown },
-    context: ExecutionContext,
+    _context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
     const config = brick.configuration as { databaseName?: string };
@@ -288,7 +288,7 @@ export class ExecutionEngine {
   private static executeGetFirstInstance(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
@@ -331,7 +331,7 @@ export class ExecutionEngine {
   private static executeLogInstanceProps(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {

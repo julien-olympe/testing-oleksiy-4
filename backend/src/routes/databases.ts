@@ -185,7 +185,7 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
       const projectId = (request.params as { projectId: string }).projectId;
       const databaseId = (request.params as { databaseId: string }).databaseId;
       const instanceId = (request.params as { instanceId: string }).instanceId;
-      const { propertyId, value } = request.body;
+      const { propertyId, value } = request.body as { propertyId: string; value: string };
 
       validateUUID(projectId, 'projectId');
       validateUUID(databaseId, 'databaseId');
