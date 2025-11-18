@@ -323,6 +323,34 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         ? [defaultDatabaseWithInstances, ...projectDatabasesWithInstances]
         : projectDatabasesWithInstances;
 
+      // Get owner information
+      const owner = await prisma.user.findUnique({
+        where: { id: project.ownerId },
+        select: {
+          id: true,
+          email: true,
+        },
+      });
+
+      // Build permissions list including owner
+      const permissionsList = project.permissions.map((p) => ({
+        userId: p.userId,
+        userEmail: p.user.email,
+        createdAt: p.createdAt.toISOString(),
+      }));
+
+      // Add owner to permissions list if not already included
+      if (owner) {
+        const ownerInPermissions = permissionsList.some((p) => p.userId === owner.id);
+        if (!ownerInPermissions) {
+          permissionsList.unshift({
+            userId: owner.id,
+            userEmail: owner.email,
+            createdAt: project.createdAt.toISOString(), // Use project creation date as owner permission date
+          });
+        }
+      }
+
       reply.send({
         project: {
           id: project.id,
@@ -338,11 +366,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
           createdAt: f.createdAt.toISOString(),
           updatedAt: f.updatedAt.toISOString(),
         })),
-        permissions: project.permissions.map((p) => ({
-          userId: p.userId,
-          userEmail: p.user.email,
-          createdAt: p.createdAt.toISOString(),
-        })),
+        permissions: permissionsList,
         databases: allDatabases.map((d) => ({
           id: d.id,
           name: d.name,
