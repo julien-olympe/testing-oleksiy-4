@@ -3,7 +3,7 @@ import { prisma } from '../db/client';
 import { validateUUID } from '../utils/validation';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
-import { checkProjectAccess } from '../utils/permissions';
+import { checkProjectAccess, checkProjectOwnership } from '../utils/permissions';
 
 interface CreateFunctionBody {
   name?: string;
@@ -192,7 +192,8 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
         throw new NotFoundError('Function');
       }
 
-      await checkProjectAccess(userId, func.projectId);
+      // Only project owners can delete functions
+      await checkProjectOwnership(userId, func.projectId);
 
       await prisma.function.delete({
         where: { id: functionId },

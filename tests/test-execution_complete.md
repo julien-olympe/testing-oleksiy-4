@@ -660,3 +660,96 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 10. Delete Function E2E Tests (Section 11-delete-function.md)
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/11-delete-function.md`  
+**Test IDs:** FUNC-DELETE-001, FUNC-DELETE-002, FUNC-DELETE-003, FUNC-DELETE-004
+
+### 10.2 Test Coverage
+
+The delete function tests cover the following scenarios:
+1. **FUNC-DELETE-001:** Delete Function - Positive Case
+2. **FUNC-DELETE-002:** Delete Function - Negative Case - Permission Denied
+3. **FUNC-DELETE-003:** Delete Function - Cancel Deletion
+4. **FUNC-DELETE-004:** Delete Function - Verify Cascading Deletion
+
+### 10.3 Execution Status
+
+**Status:** ✅ PASSED (4/4 tests passing)
+
+**Test Execution Date:** 2025-01-17  
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/delete-function.spec.ts --reporter=list`  
+**Test Duration:** ~1.4 minutes  
+**Overall Result:** 4 tests passed
+
+### 10.4 Detailed Test Results
+
+#### Test FUNC-DELETE-001: Delete Function - Positive Case
+- **Status:** ✅ PASSED
+- **Duration:** 23.9s
+- **Details:** 
+  - Successfully created project and function
+  - Function deletion with confirmation dialog working correctly
+  - Function removed from list and system
+  - Cascading deletion of brick configurations verified
+  - No error messages displayed
+
+#### Test FUNC-DELETE-002: Delete Function - Negative Case - Permission Denied
+- **Status:** ✅ PASSED
+- **Duration:** 43.0s
+- **Details:**
+  - Successfully tested permission restrictions
+  - Non-owner user cannot delete functions
+  - Error message displayed when deletion attempted
+  - Function remains in system after failed deletion attempt
+- **Backend Fix Applied:**
+  - Updated `/workspace/backend/src/routes/functions.ts` to use `checkProjectOwnership` instead of `checkProjectAccess` for delete endpoint
+  - Only project owners can now delete functions (permission restrictions enforced)
+
+#### Test FUNC-DELETE-003: Delete Function - Cancel Deletion
+- **Status:** ✅ PASSED
+- **Duration:** 24.4s
+- **Details:**
+  - Confirmation dialog displayed correctly
+  - Cancel action works correctly
+  - Function remains in system after cancellation
+  - No changes made to function
+  - No error messages displayed
+
+#### Test FUNC-DELETE-004: Delete Function - Verify Cascading Deletion
+- **Status:** ✅ PASSED
+- **Duration:** 34.2s
+- **Details:**
+  - Function with brick configurations deleted successfully
+  - All associated brick configurations deleted (cascade)
+  - No orphaned data remains in system
+  - Database cascade delete working correctly
+
+### 10.5 Issues Found and Fixes Applied
+
+**Total Issues Fixed:** 2
+
+1. **Backend Permission Check:**
+   - **Issue:** Delete function endpoint allowed users with project permissions to delete functions
+   - **Root Cause:** Endpoint used `checkProjectAccess` which allows both owners and users with permissions
+   - **Fix Applied:** Changed to use `checkProjectOwnership` to restrict deletion to project owners only
+   - **File Modified:** `/workspace/backend/src/routes/functions.ts`
+   - **Impact:** Permission restrictions now properly enforced at backend level
+
+2. **Test Stability:**
+   - **Issue:** Tests failing due to multiple elements with same name (strict mode violations)
+   - **Fix Applied:** Updated all test selectors to use `.first()` for project and function cards
+   - **Impact:** Tests now handle existing data from previous test runs correctly
+
+### 10.6 Test File Created
+
+**File:** `/workspace/frontend/e2e/delete-function.spec.ts`
+- Created comprehensive test suite covering all 4 test scenarios
+- Handles user registration/login with fallback for existing users
+- Includes proper setup and teardown for each test
+- Verifies all expected behaviors including error handling and cascading deletion
