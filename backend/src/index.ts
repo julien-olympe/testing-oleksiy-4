@@ -19,9 +19,7 @@ async function buildServer() {
   const fastify = Fastify({
     logger: false, // We use custom logging
     requestIdLogLabel: 'requestId',
-    genReqId: () => {
-      return undefined; // We handle this in middleware
-    },
+    // genReqId removed - we handle this in middleware
   });
 
   // Register middleware
@@ -45,7 +43,7 @@ async function buildServer() {
   });
 
   // Security headers
-  fastify.addHook('onSend', async (request, reply) => {
+  fastify.addHook('onSend', async (_request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('X-XSS-Protection', '1; mode=block');
