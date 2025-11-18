@@ -28,12 +28,12 @@ const VALID_BRICK_TYPES = ['ListInstancesByDB', 'GetFirstInstance', 'LogInstance
 
 export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   // POST /api/v1/functions/:id/bricks
-  fastify.post<{ Body: CreateBrickBody }>(
+  fastify.post<{ Body: CreateBrickBody; Params: { functionId: string } }>(
     '/functions/:functionId/bricks',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateBrickBody; params: { functionId: string } }, reply) => {
       const userId = request.userId!;
-      const functionId = (request.params as { functionId: string }).functionId;
+      const functionId = request.params.functionId;
       const { type, positionX, positionY, configuration } = request.body;
 
       validateUUID(functionId, 'functionId');
@@ -118,12 +118,12 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // PUT /api/v1/bricks/:id
-  fastify.put<{ Body: UpdateBrickBody }>(
+  fastify.put<{ Body: UpdateBrickBody; Params: { id: string } }>(
     '/:id',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateBrickBody; params: { id: string } }, reply) => {
       const userId = request.userId!;
-      const brickId = (request.params as { id: string }).id;
+      const brickId = request.params.id;
       const { positionX, positionY, configuration } = request.body;
 
       validateUUID(brickId, 'id');
@@ -248,12 +248,12 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // POST /api/v1/bricks/:id/connections
-  fastify.post<{ Body: CreateConnectionBody }>(
+  fastify.post<{ Body: CreateConnectionBody; Params: { id: string } }>(
     '/:id/connections',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateConnectionBody; params: { id: string } }, reply) => {
       const userId = request.userId!;
-      const fromBrickId = (request.params as { id: string }).id;
+      const fromBrickId = request.params.id;
       const { fromOutputName, toBrickId, toInputName } = request.body;
 
       validateUUID(fromBrickId, 'id');

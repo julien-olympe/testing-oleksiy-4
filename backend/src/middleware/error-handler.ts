@@ -4,10 +4,10 @@ import { Logger } from '../utils/logger';
 
 export async function errorHandler(
   error: FastifyError | Error,
-  request: FastifyRequest,
-  reply: FastifyReply
+  request: FastifyRequest<any, any, any, any, any, any, any>,
+  reply: FastifyReply<any, any, any, any, any, any>
 ): Promise<void> {
-  const requestId = (request.headers['x-request-id'] as string) || 'unknown';
+  const requestId = (request.headers['x-request-id'] as string | undefined) || 'unknown';
   const userId = (request as FastifyRequest & { userId?: string }).userId;
   const endpoint = request.url.split('?')[0];
   const method = request.method;

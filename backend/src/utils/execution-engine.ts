@@ -180,7 +180,7 @@ export class ExecutionEngine {
       id: string;
       type: string;
       configuration: unknown;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toInputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toBrickId: string; toInputName: string }>;
     },
     context: ExecutionContext,
     projectId: string
@@ -202,7 +202,7 @@ export class ExecutionEngine {
 
   private static async executeListInstancesByDB(
     brick: { id: string; configuration: unknown },
-    context: ExecutionContext,
+    _context: ExecutionContext,
     projectId: string
   ): Promise<ExecutionResult> {
     const config = brick.configuration as { databaseName?: string };
@@ -288,7 +288,7 @@ export class ExecutionEngine {
   private static executeGetFirstInstance(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toBrickId: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
@@ -331,12 +331,12 @@ export class ExecutionEngine {
   private static executeLogInstanceProps(
     brick: {
       id: string;
-      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string }>;
+      connectionsTo: Array<{ fromBrickId: string; fromOutputName: string; toBrickId: string; toInputName: string }>;
     },
     context: ExecutionContext
   ): Promise<ExecutionResult> {
     // Find input connection
-    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Instance');
+    const inputConnection = brick.connectionsTo.find((c) => c.toInputName === 'Object');
     if (!inputConnection) {
       throw new BusinessLogicError('MISSING_REQUIRED_INPUTS', 'Missing required inputs', {
         brickId: brick.id,

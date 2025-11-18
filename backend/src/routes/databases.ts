@@ -177,14 +177,14 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // PUT /api/v1/projects/:id/databases/:databaseId/instances/:instanceId
-  fastify.put<{ Body: UpdateInstanceBody }>(
+  fastify.put<{ Body: UpdateInstanceBody; Params: { projectId: string; databaseId: string; instanceId: string } }>(
     '/projects/:projectId/databases/:databaseId/instances/:instanceId',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateInstanceBody; params: { projectId: string; databaseId: string; instanceId: string } }, reply) => {
       const userId = request.userId!;
-      const projectId = (request.params as { projectId: string }).projectId;
-      const databaseId = (request.params as { databaseId: string }).databaseId;
-      const instanceId = (request.params as { instanceId: string }).instanceId;
+      const projectId = request.params.projectId;
+      const databaseId = request.params.databaseId;
+      const instanceId = request.params.instanceId;
       const { propertyId, value } = request.body;
 
       validateUUID(projectId, 'projectId');

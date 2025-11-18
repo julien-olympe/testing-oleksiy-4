@@ -44,12 +44,12 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // POST /api/v1/projects/:id/functions
-  fastify.post<{ Body: CreateFunctionBody }>(
+  fastify.post<{ Body: CreateFunctionBody; Params: { projectId: string } }>(
     '/projects/:projectId/functions',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateFunctionBody; params: { projectId: string } }, reply) => {
       const userId = request.userId!;
-      const projectId = (request.params as { projectId: string }).projectId;
+      const projectId = request.params.projectId;
       const { name } = request.body;
 
       validateUUID(projectId, 'projectId');
@@ -123,12 +123,12 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   // PUT /api/v1/functions/:id
-  fastify.put<{ Body: UpdateFunctionBody }>(
+  fastify.put<{ Body: UpdateFunctionBody; Params: { id: string } }>(
     '/:id',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateFunctionBody; params: { id: string } }, reply) => {
       const userId = request.userId!;
-      const functionId = (request.params as { id: string }).id;
+      const functionId = request.params.id;
       const { name } = request.body;
 
       validateUUID(functionId, 'id');
