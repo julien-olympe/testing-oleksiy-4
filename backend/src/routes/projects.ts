@@ -91,7 +91,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{ Body: CreateProjectBody }>(
     '/',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateProjectBody }, reply) => {
       const userId = request.userId!;
       const { name } = request.body;
 
@@ -164,7 +164,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put<{ Body: UpdateProjectBody }>(
     '/:id',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateProjectBody }, reply) => {
       const userId = request.userId!;
       const projectId = (request.params as { id: string }).id;
       const { name } = request.body;

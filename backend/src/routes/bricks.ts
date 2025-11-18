@@ -31,7 +31,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{ Body: CreateBrickBody }>(
     '/functions/:functionId/bricks',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateBrickBody }, reply) => {
       const userId = request.userId!;
       const functionId = (request.params as { functionId: string }).functionId;
       const { type, positionX, positionY, configuration } = request.body;
@@ -121,7 +121,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put<{ Body: UpdateBrickBody }>(
     '/:id',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: UpdateBrickBody }, reply) => {
       const userId = request.userId!;
       const brickId = (request.params as { id: string }).id;
       const { positionX, positionY, configuration } = request.body;
@@ -251,7 +251,7 @@ export async function brickRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{ Body: CreateConnectionBody }>(
     '/:id/connections',
     { preHandler: [authenticate] },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request: AuthenticatedRequest & { body: CreateConnectionBody }, reply) => {
       const userId = request.userId!;
       const fromBrickId = (request.params as { id: string }).id;
       const { fromOutputName, toBrickId, toInputName } = request.body;
