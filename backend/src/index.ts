@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+import { resolve } from 'path';
+// Load .env from workspace root or backend directory
+dotenv.config({ path: resolve(__dirname, '../../.env') });
+dotenv.config({ path: resolve(__dirname, '../.env') }); // Fallback to backend/.env
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
