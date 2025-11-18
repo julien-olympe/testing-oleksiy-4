@@ -27,8 +27,23 @@ export const LoginScreen: React.FC = () => {
       navigate('/home');
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response: { data: { error: { message: string } } } };
-        setError(axiosError.response?.data?.error?.message || 'An error occurred');
+        const axiosError = err as { 
+          response?: { 
+            data?: { 
+              error?: { message?: string };
+              message?: string;
+            };
+          };
+        };
+        // Try to extract error message from different possible structures
+        const errorMessage = 
+          axiosError.response?.data?.error?.message ||
+          axiosError.response?.data?.message ||
+          (axiosError.response?.data as { message?: string })?.message ||
+          'An error occurred';
+        setError(errorMessage);
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError('An unexpected error occurred');
       }
