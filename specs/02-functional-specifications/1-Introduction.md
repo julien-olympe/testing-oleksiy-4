@@ -1,16 +1,10 @@
 # 1. Introduction
 
-## Purpose
+## Purpose and Audience of the Document
 
-This document defines the functional specifications for a visual programming application. The system enables users to create programming logic through visual elements called "bricks" that represent functions and operations. Users assemble these bricks to build executable functions that interact with databases and perform operations.
-
-The application is a new system being developed from scratch. It provides a web-based interface where users can create projects, define functions using visual programming, manage database instances, and execute their logic.
-
-### Business and Strategic Objectives
+This document defines the functional specifications for a visual programming application. The system enables users to create programming logic through visual elements called "bricks" that represent functions and operations. Users assemble these bricks to build executable functions that interact with databases and perform operations. The application is a new system being developed from scratch. It provides a web-based interface where users can create projects, define functions using visual programming, manage database instances, and execute their logic.
 
 This system fits within the business and strategic objectives of the sponsoring organization by enabling users to create programming logic through visual interfaces, thereby reducing the barrier to entry for programming and enabling non-technical users to build data processing workflows. This aligns with strategic objectives of democratizing software development and increasing productivity through visual programming tools. By providing an intuitive, visual approach to programming, the system empowers users who may not have traditional coding skills to create functional applications and automate data processing tasks, ultimately expanding the organization's capability to deliver software solutions and increasing operational efficiency.
-
-## Audience
 
 This document is intended for:
 - Software developers implementing the system
