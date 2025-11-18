@@ -802,3 +802,81 @@ cd /workspace/frontend && npm run test:e2e
 **Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
 **Known Issues:**
 - None
+
+---
+
+## 10. E2E Tests - Section 09-Create-Function
+
+### 10.1 Test Specification
+
+**Test File:** `/workspace/specs/04-end-to-end-testing/09-create-function.md`  
+**Test File Created:** `/workspace/frontend/e2e/09-create-function.spec.ts`  
+**Test Cases:** 5 test scenarios
+
+### 10.2 Execution Status
+
+**Status:** ⚠️ PARTIAL (2/5 tests passing)
+
+**Test Results:**
+- ⚠️ **FUNC-CREATE-001:** Create Function - Positive Case - **FAILING** (strict mode violation - fixes applied, needs verification)
+- ✅ **FUNC-CREATE-002:** Create Function - Negative Case - Drag to Invalid Location - **PASSING**
+- ⚠️ **FUNC-CREATE-003:** Create Function - Negative Case - Permission Denied - **FAILING** (timeout issues, complex setup)
+- ✅ **FUNC-CREATE-004:** Create Function - Verify Multiple Functions Can Be Created - **PASSING**
+- ⚠️ **FUNC-CREATE-005:** Create Function - Verify Function Persistence - **FAILING** (function card not appearing)
+
+**Overall:** 2/5 tests passing (40%)
+
+### 10.3 Backend Changes Applied
+
+1. **Function Creation Permission Check:**
+   - **File:** `/workspace/backend/src/routes/functions.ts`
+   - **Change:** Updated function creation endpoint to require project ownership instead of just project access
+   - **Reason:** Test FUNC-CREATE-003 requires that users with permissions (but not owners) cannot create functions
+   - **Impact:** Only project owners can now create functions; users with permissions can view but not create
+
+### 10.4 Test Implementation Details
+
+**Test File:** `/workspace/frontend/e2e/09-create-function.spec.ts`
+
+**Test Structure:**
+- Each test case implemented as separate test function
+- Comprehensive setup steps for user registration, project creation, and navigation
+- Proper waiting for API responses and UI updates
+- Error handling for existing users/projects
+
+**Issues Fixed:**
+1. Added proper waiting for function cards to appear after drag-and-drop
+2. Used `.first()` to handle multiple function cards with same name (strict mode violations)
+3. Added API response waiting for function creation
+4. Improved project setup logic to handle existing projects
+
+### 10.5 Remaining Issues
+
+1. **FUNC-CREATE-003 (Permission Denied):**
+   - **Issue:** Test times out during setup phase
+   - **Root Cause:** Complex multi-user setup with permission management
+   - **Status:** Needs further investigation - may require test timeout increase or setup simplification
+
+2. **FUNC-CREATE-005 (Function Persistence):**
+   - **Issue:** Function card not appearing after creation
+   - **Root Cause:** Timing issue or function not being created properly
+   - **Status:** Needs investigation - may be related to backend response or UI update timing
+
+### 10.6 Recommendations
+
+1. **Immediate Actions:**
+   - ✅ Completed: Backend permission check updated
+   - ✅ Completed: Test file created with all 5 test cases
+   - ⚠️ Pending: Fix FUNC-CREATE-003 timeout issues
+   - ⚠️ Pending: Fix FUNC-CREATE-005 function card visibility
+
+2. **Future Improvements:**
+   - Consider adding test data cleanup between test runs
+   - Add more robust error handling for permission scenarios
+   - Consider test isolation improvements to avoid state conflicts
+
+---
+
+**Report Updated:** 2025-01-17  
+**Section 09-Create-Function Status:** 2/5 tests passing (40%)  
+**Note:** Fixes have been applied to FUNC-CREATE-001 and FUNC-CREATE-005 but need verification. FUNC-CREATE-003 requires further investigation for timeout issues.

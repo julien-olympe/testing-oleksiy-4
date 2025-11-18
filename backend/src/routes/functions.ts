@@ -3,7 +3,7 @@ import { prisma } from '../db/client';
 import { validateUUID } from '../utils/validation';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
-import { checkProjectAccess } from '../utils/permissions';
+import { checkProjectAccess, checkProjectOwnership } from '../utils/permissions';
 
 interface CreateFunctionBody {
   name?: string;
@@ -68,7 +68,8 @@ export async function functionRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
-      await checkProjectAccess(userId, projectId);
+      // Only project owners can create functions
+      await checkProjectOwnership(userId, projectId);
 
       const func = await prisma.function.create({
         data: {
