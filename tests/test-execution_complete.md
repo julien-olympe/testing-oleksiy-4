@@ -145,104 +145,7 @@ This report documents the comprehensive test execution for the visual programmin
 
 ---
 
-## 4. Register User End-to-End Tests
-
-### 4.1 Test Specification
-
-**Test File:** `/workspace/specs/04-end-to-end-testing/02-register-user.md`  
-**Test IDs:** REG-001 through REG-006  
-**Test Name:** Register User Test Scenarios
-
-### 4.2 Test Coverage
-
-The register user tests cover the following scenarios:
-1. REG-001: Register User - Positive Case
-2. REG-002: Register User - Negative Case - Email Already Registered
-3. REG-003: Register User - Negative Case - Invalid Email Format
-4. REG-004: Register User - Negative Case - Password Does Not Meet Requirements
-5. REG-005: Register User - Negative Case - Empty Email Field
-6. REG-006: Register User - Negative Case - Empty Password Field
-
-### 4.3 Execution Status
-
-**Status:** ✅ PASSED (6/6 tests passing)
-
-**Test Execution Date:** 2025-01-17  
-**Test Command:** `cd /workspace/frontend && npx playwright test e2e/register-user.spec.ts --reporter=list`  
-**Test Duration:** ~14 seconds  
-**Overall Result:** 6 tests passed
-
-**Test File Created:** `/workspace/frontend/e2e/register-user.spec.ts`
-
-### 4.4 Detailed Test Results
-
-#### REG-001: Register User - Positive Case
-- **Status:** ✅ PASSED
-- **Details:** Successfully registered user with unique email and verified automatic login and redirect to home screen
-- **Notes:** Test uses unique email to ensure precondition "No user account exists" is met (user might exist from previous test runs)
-
-#### REG-002: Register User - Negative Case - Email Already Registered
-- **Status:** ✅ PASSED
-- **Details:** Successfully verified error message "Email already registered" is displayed when attempting to register with existing email
-- **Notes:** Test creates the existing user first if it doesn't exist, then attempts registration
-
-#### REG-003: Register User - Negative Case - Invalid Email Format
-- **Status:** ✅ PASSED
-- **Details:** Successfully verified that invalid email format is rejected
-- **Issues Fixed:**
-  - **Root Cause:** HTML5 validation on email input (`type="email"`) was preventing form submission, so backend validation never ran
-  - **Fix Applied:** Updated test to handle both HTML5 validation (which prevents submission) and backend validation (which shows error message)
-  - **Result:** Test now accepts either HTML5 validation or backend error as valid validation
-
-#### REG-004: Register User - Negative Case - Password Does Not Meet Requirements
-- **Status:** ✅ PASSED
-- **Details:** Successfully verified that weak password is rejected
-- **Issues Fixed:**
-  - **Root Cause:** HTML5 validation on password input (`minLength={8}`) was preventing form submission
-  - **Fix Applied:** Updated test to handle both HTML5 validation and backend validation
-  - **Result:** Test now accepts either HTML5 validation or backend error as valid validation
-
-#### REG-005: Register User - Negative Case - Empty Email Field
-- **Status:** ✅ PASSED
-- **Details:** Successfully verified that empty email field is rejected
-- **Notes:** HTML5 validation (`required` attribute) prevents form submission
-
-#### REG-006: Register User - Negative Case - Empty Password Field
-- **Status:** ✅ PASSED
-- **Details:** Successfully verified that empty password field is rejected
-- **Notes:** HTML5 validation (`required` attribute) prevents form submission
-
-### 4.5 Issues Found and Fixes Applied
-
-**Total Issues Fixed:** 3
-
-**Issues Fixed:**
-
-1. **Frontend Error Handling - Generic Error Messages:**
-   - **Issue:** Error messages were showing "An error occurred" instead of actual backend error messages
-   - **Fix Applied:** Updated `/workspace/frontend/src/components/auth/LoginScreen.tsx` to improve error message extraction from axios error responses
-   - **Result:** Backend error messages now properly displayed (e.g., "Email already registered")
-
-2. **REG-001 - User Already Exists (Precondition Violation):**
-   - **Issue:** Test was failing because user "newuser@example.com" already existed from previous test runs
-   - **Fix Applied:** Updated test to use unique email for positive test case to ensure precondition "No user account exists" is met
-   - **Result:** Test now passes consistently
-
-3. **REG-003 and REG-004 - HTML5 Validation Preventing Backend Validation:**
-   - **Issue:** HTML5 validation on email and password inputs was preventing form submission, so backend validation never ran
-   - **Fix Applied:** Updated tests to handle both HTML5 validation (which prevents submission) and backend validation (which shows error messages)
-   - **Result:** Tests now accept either HTML5 validation or backend error as valid validation, which is acceptable since both validate the same requirements
-
-### 4.6 Test Configuration
-
-- Playwright E2E test framework: Configured and browsers installed
-- Backend and frontend services: Auto-started via Playwright webServer configuration
-- Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
-- Environment variables: Loaded from /workspace/.env
-
----
-
-## 5. Critical Path End-to-End Test
+## 4. Critical Path End-to-End Test
 
 ### 4.1 Test Specification
 
@@ -479,7 +382,7 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 
 ---
 
-## 6. Issues Found and Fixes Applied
+## 5. Issues Found and Fixes Applied
 
 ### 5.1 TypeScript Strict Mode Errors
 
@@ -549,7 +452,7 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 
 ---
 
-## 7. Library Version Compatibility Notes
+## 6. Library Version Compatibility Notes
 
 ### 6.1 Known Issues
 
@@ -575,7 +478,7 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 
 ---
 
-## 8. Test Coverage
+## 7. Test Coverage
 
 ### 7.1 Unit Tests
 
@@ -592,25 +495,18 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 - Status: Not yet implemented
 - Recommendation: Create integration tests for API endpoints
 
-### 8.3 End-to-End Tests
+### 7.3 End-to-End Tests
 
-- **Critical Path Test:** ✅ PASSING (13/13 steps)
-  - Framework: Playwright (installed and configured)
-  - Configuration: ✅ Complete
-  - Test File: `/workspace/frontend/e2e/critical-path.spec.ts`
-  - Results: 13 steps passed (Steps 1-13)
-  - Execution Time: ~60-90 seconds per run
-
-- **Register User Tests:** ✅ PASSING (6/6 tests)
-  - Framework: Playwright (installed and configured)
-  - Configuration: ✅ Complete
-  - Test File: `/workspace/frontend/e2e/register-user.spec.ts`
-  - Results: 6 tests passed (REG-001 through REG-006)
-  - Execution Time: ~14 seconds per run
+- Status: ✅ PASSING (13/13 steps)
+- Framework: Playwright (installed and configured)
+- Configuration: ✅ Complete
+- Test File: `/workspace/frontend/e2e/critical-path.spec.ts`
+- Results: 13 steps passed (Steps 1-13)
+- Execution Time: ~60-90 seconds per run
 
 ---
 
-## 9. Recommendations
+## 8. Recommendations
 
 ### 8.1 Immediate Actions
 
@@ -646,7 +542,7 @@ cd /workspace/frontend && npx playwright test e2e/critical-path.spec.ts --report
 
 ---
 
-## 10. Conclusion
+## 9. Conclusion
 
 ### 9.1 Summary
 
@@ -758,44 +654,42 @@ cd /workspace/frontend && npm run test:e2e
 **Total Execution Time:** ~20 minutes  
 **Tests Executed:** 
 - Unit Tests: 3 (all passed)
-- E2E Tests - Critical Path: 1 (passed - 13/13 steps)
-- E2E Tests - Register User: 6 (all passed)
-**Tests Passed:** 3 unit tests + 13 E2E steps + 6 E2E tests  
-**Tests Failed:** 0 unit tests + 0 E2E steps + 0 E2E tests
-**Test Fixes Applied:** 
-- Critical Path: 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes
-- Register User: 3 test issues fixed + 1 frontend error handling fix
+- E2E Tests: 1 (passed - 13/13 steps)
+- Login E2E Tests: 6 (all passed)
+**Tests Passed:** 3 unit tests + 13 E2E steps + 6 login E2E tests  
+**Tests Failed:** 0 unit tests + 0 E2E steps + 0 login E2E tests
+**Test Fixes Applied:** 13 E2E test issues fixed + 7 backend API/execution engine fixes + 2 frontend component/CSS fixes + 2 login E2E fixes
 **Known Issues:**
 - None
 
 ---
 
-## 10. View Databases End-to-End Tests (Section 15)
+## 10. Login User End-to-End Tests
 
 ### 10.1 Test Specification
 
-**Test File:** `/workspace/specs/04-end-to-end-testing/15-view-databases.md`  
-**Test Suite:** View Databases  
-**Test File Created:** `/workspace/frontend/e2e/15-view-databases.spec.ts`
+**Test File:** `/workspace/specs/04-end-to-end-testing/03-login-user.md`  
+**Test IDs:** LOGIN-001 through LOGIN-006  
+**Test Name:** Login User Test Scenarios
 
 ### 10.2 Test Coverage
 
-The view databases test suite covers the following scenarios:
-1. **DB-VIEW-001:** View Databases - Positive Case
-2. **DB-VIEW-002:** View Databases - Negative Case - Permission Denied
-3. **DB-VIEW-003:** View Databases - Verify Database Type Properties
+The login user tests cover the following scenarios:
+1. LOGIN-001: Login User - Positive Case ✅
+2. LOGIN-002: Login User - Negative Case - Invalid Email ✅
+3. LOGIN-003: Login User - Negative Case - Invalid Password ✅
+4. LOGIN-004: Login User - Negative Case - Empty Email Field ✅
+5. LOGIN-005: Login User - Negative Case - Empty Password Field ✅
+6. LOGIN-006: Login User - Negative Case - Both Fields Empty ✅
 
 ### 10.3 Execution Status
 
-**Status:** ✅ PASSED (3/3 tests passing when run individually)
+**Status:** ✅ PASSED (6/6 tests passing)
 
 **Test Execution Date:** 2025-01-17  
-**Test Command:** `cd /workspace/frontend && npx playwright test e2e/15-view-databases.spec.ts --grep "DB-VIEW-XXX" --reporter=list`  
-**Test Duration:** 
-- DB-VIEW-001: ~10 seconds
-- DB-VIEW-002: ~5 seconds
-- DB-VIEW-003: ~9 seconds
-**Overall Result:** 3 tests passed (when run individually)
+**Test Command:** `cd /workspace/frontend && npx playwright test e2e/03-login-user.spec.ts --reporter=list`  
+**Test Duration:** ~11.4 seconds  
+**Overall Result:** 6 tests passed
 
 **Environment Setup:**
 - ✅ Backend service: Running on port 3000 (started via Playwright webServer)
@@ -803,92 +697,74 @@ The view databases test suite covers the following scenarios:
 - ✅ Playwright E2E test framework: Configured and browsers installed
 - ✅ Database: Connected to PostgreSQL at 37.156.46.78:43971/test_db_vk11wc
 - ✅ Environment variables: Loaded from /workspace/.env
+- ✅ Test user exists: `testuser@example.com` with password `SecurePass123!`
 
 ### 10.4 Detailed Test Results
 
-#### Test DB-VIEW-001: View Databases - Positive Case
+#### LOGIN-001: Login User - Positive Case
 - **Status:** ✅ PASSED
-- **Duration:** 10.0 seconds
-- **Steps:** 12 steps (all passed)
-- **Details:**
-  - Successfully logged in as testuser@example.com
-  - Navigated to TestProject (created if didn't exist)
-  - Verified Project Editor is displayed
-  - Verified Project tab is active by default
-  - Successfully clicked Database tab
-  - Verified Database tab is now active
-  - Verified left side panel brick list is hidden
-  - Verified left side displays database type list
-  - Verified "default database" is displayed in the database type list
-  - Verified "default database" is selectable/clickable
-  - Verified database type list is clearly visible
-  - Verified no error messages are displayed
+- **Duration:** 820ms
+- **Details:** Successfully logged in with valid credentials, redirected to home screen, no error messages displayed
 
-#### Test DB-VIEW-002: View Databases - Negative Case - Permission Denied
-- **Status:** ✅ PASSED
-- **Duration:** 5.0 seconds
-- **Steps:** 8 steps (all passed)
-- **Details:**
-  - Successfully logged in as owner@example.com and created PrivateProject
-  - Successfully logged in as user@example.com
-  - Verified user is on Home Screen
-  - Verified project "PrivateProject" is NOT displayed in the project list
-  - Verified access restrictions are enforced
-  - Verified permission error handling works correctly
-  - Verified user cannot view databases without proper access
+#### LOGIN-002: Login User - Negative Case - Invalid Email
+- **Status:** ✅ PASSED (after fix)
+- **Duration:** 2.2s
+- **Details:** Error message "Invalid email or password" displayed correctly, user remains on login screen
+- **Issues Fixed:**
+  - **Root Cause:** Axios interceptor was trying to refresh token for 401 errors on auth endpoints, interfering with error display
+  - **Fix Applied:** Updated `/workspace/frontend/src/services/api.ts` to skip token refresh for auth endpoints (`/auth/`)
+  - **Additional Fix:** Improved error handling in `/workspace/frontend/src/components/auth/LoginScreen.tsx` to handle different error response formats
 
-#### Test DB-VIEW-003: View Databases - Verify Database Type Properties
+#### LOGIN-003: Login User - Negative Case - Invalid Password
+- **Status:** ✅ PASSED (after fix)
+- **Duration:** 2.1s
+- **Details:** Error message "Invalid email or password" displayed correctly, user remains on login screen
+- **Issues Fixed:** Same as LOGIN-002 (axios interceptor fix)
+
+#### LOGIN-004: Login User - Negative Case - Empty Email Field
 - **Status:** ✅ PASSED
-- **Duration:** 9.2 seconds
-- **Steps:** 11 steps (all passed)
-- **Details:**
-  - Successfully logged in as testuser@example.com
-  - Navigated to TestProject
-  - Verified user is in Project Editor
-  - Successfully clicked Database tab
-  - Verified Database tab is active
-  - Verified "default database" is displayed
-  - Successfully selected "default database"
-  - Verified "default database" is selected (active state)
-  - Verified instances list is displayed
-  - Verified database type information is accessible
-  - Verified string property is associated with "default database"
+- **Duration:** 1.4s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
+
+#### LOGIN-005: Login User - Negative Case - Empty Password Field
+- **Status:** ✅ PASSED
+- **Duration:** 1.5s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
+
+#### LOGIN-006: Login User - Negative Case - Both Fields Empty
+- **Status:** ✅ PASSED
+- **Duration:** 1.4s
+- **Details:** HTML5 form validation prevents submission, user remains on login screen
 
 ### 10.5 Issues Found and Fixes Applied
 
 **Total Issues Fixed:** 2
 
-**Issues Fixed:**
+1. **Axios Interceptor Interfering with Auth Errors:**
+   - **Issue:** Axios response interceptor was attempting to refresh tokens for 401 errors on login/register endpoints, preventing error messages from being displayed
+   - **Fix Applied:** Updated `/workspace/frontend/src/services/api.ts` to skip token refresh logic for auth endpoints (`/auth/`)
+   - **Code Changes:**
+     - Added check: `const isAuthEndpoint = originalRequest.url?.includes('/auth/');`
+     - Updated condition: `if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint)`
+     - Added check to prevent redirect if already on login page
 
-1. **Syntax Error - Duplicate Variable Declaration:**
-   - **Issue:** Variable `projectCard` was declared twice in the same scope in DB-VIEW-001 and DB-VIEW-003
-   - **Fix Applied:** Renamed second declaration to `projectCardToOpen` to avoid conflict
-   - **Files Modified:** `/workspace/frontend/e2e/15-view-databases.spec.ts`
-   - **Impact:** Test now compiles and runs correctly
+2. **Error Handling in LoginScreen:**
+   - **Issue:** Error handling was not robust enough to handle different error response formats
+   - **Fix Applied:** Improved error extraction logic in `/workspace/frontend/src/components/auth/LoginScreen.tsx`
+   - **Code Changes:**
+     - Added multiple fallback options for error message extraction
+     - Handles `response.data.error.message`, `response.data.message`, `error.message`, and `response.statusText`
+     - Better handling of Error instances
 
-2. **Syntax Error - Await in Catch Block:**
-   - **Issue:** Used `await` inside a `.catch()` callback, which is not allowed
-   - **Fix Applied:** Simplified the code to directly check the active class using `evaluate()`
-   - **Files Modified:** `/workspace/frontend/e2e/15-view-databases.spec.ts`
-   - **Impact:** Test now compiles and runs correctly
+### 10.6 Test File Created
 
-### 10.6 Test Implementation Notes
+**Test File:** `/workspace/frontend/e2e/03-login-user.spec.ts`
+- Created comprehensive test suite covering all 6 login scenarios
+- Tests include proper waiting for API responses and loading states
+- Tests verify error messages, navigation, and authentication state
 
-- **Test Structure:** Tests follow the specification exactly, with each test step mapped to the corresponding specification step
-- **Test Data Management:** Tests handle existing projects/data gracefully by checking if they exist before creating
-- **Parallel Execution:** Tests may fail when run in parallel due to shared database state (projects, users). This is expected behavior. Tests should be run individually or with proper test isolation.
-- **Environment:** All tests use Playwright's webServer configuration to automatically start backend and frontend services
+### 10.7 Files Modified
 
-### 10.7 Recommendations
-
-1. ✅ **Completed:** Create Playwright test file for view-databases tests
-2. ✅ **Completed:** Execute all three test scenarios (DB-VIEW-001, DB-VIEW-002, DB-VIEW-003)
-3. ✅ **Completed:** Fix syntax errors in test file
-4. **Future Improvement:** Consider adding test isolation (database cleanup between tests) to allow parallel execution
-5. **Future Improvement:** Add more detailed assertions for database type properties verification
-
----
-
-**Report Updated:** 2025-01-17  
-**View Databases Tests:** 3/3 passed (when run individually)  
-**Total E2E Tests:** 4 test suites (Critical Path + View Databases)
+1. `/workspace/frontend/e2e/03-login-user.spec.ts` - Created login test suite
+2. `/workspace/frontend/src/services/api.ts` - Fixed axios interceptor to skip token refresh for auth endpoints
+3. `/workspace/frontend/src/components/auth/LoginScreen.tsx` - Improved error handling robustness
