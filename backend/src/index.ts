@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -55,6 +56,11 @@ async function buildServer() {
     reply.header('X-XSS-Protection', '1; mode=block');
     reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     reply.header('Content-Security-Policy', "default-src 'self'");
+  });
+
+  // Health check endpoint
+  fastify.get('/health', async (_request, reply) => {
+    return reply.code(200).send({ status: 'ok' });
   });
 
   // Register routes
