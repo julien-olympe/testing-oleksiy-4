@@ -5,7 +5,7 @@ Backend API server for the visual programming application built with Fastify 4.2
 ## Features
 
 - Fastify 4.26.2 with TypeScript 5.5.4 (strict mode)
-- Prisma ORM with PostgreSQL 16.x
+- PostgreSQL 16.x with pg (node-postgres) library
 - JWT authentication (HS256, 24h access tokens, 7d refresh tokens)
 - Token blacklist for logout
 - Structured JSON logging with request ID tracking
@@ -36,8 +36,8 @@ cp .env.example .env
 
 3. Set up database:
 ```bash
-npx prisma migrate dev
-npx prisma generate
+# Database migrations should be run manually or via your migration tool
+# The application uses raw SQL queries with the pg library
 ```
 
 4. Start the server:

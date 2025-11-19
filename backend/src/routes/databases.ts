@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../db/client';
+import { query, queryOne, queryMany, transaction } from '../db/client';
 import { validateUUID } from '../utils/validation';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
@@ -7,6 +7,31 @@ import { checkProjectAccess } from '../utils/permissions';
 
 interface UpdateInstanceBody {
   propertyId: string;
+  value: string;
+}
+
+interface DatabaseRow {
+  id: string;
+  name: string;
+  project_id: string;
+}
+
+interface PropertyRow {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface InstanceRow {
+  id: string;
+  database_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface InstanceValueRow {
+  property_id: string;
+  property_name: string;
   value: string;
 }
 
@@ -25,26 +50,33 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
       // Get project databases and default database
       const [projectDatabases, defaultDatabase] = await Promise.all([
-        prisma.database.findMany({
-          where: { projectId },
-          include: { properties: true },
-        }),
-        prisma.database.findFirst({
-          where: {
-            name: 'default database',
-            projectId: '00000000-0000-0000-0000-000000000000', // System project ID
-          },
-          include: { properties: true },
-        }),
+        queryMany<DatabaseRow>(
+          'SELECT id, name, project_id FROM databases WHERE project_id = $1',
+          [projectId]
+        ),
+        queryOne<DatabaseRow>(
+          "SELECT id, name, project_id FROM databases WHERE name = 'default database' AND project_id = '00000000-0000-0000-0000-000000000000'"
+        ),
       ]);
 
       const databases = defaultDatabase ? [defaultDatabase, ...projectDatabases] : projectDatabases;
 
+      // Get properties for each database
+      const databasesWithProperties = await Promise.all(
+        databases.map(async (db) => {
+          const properties = await queryMany<PropertyRow>(
+            'SELECT id, name, type FROM database_properties WHERE database_id = $1',
+            [db.id]
+          );
+          return { ...db, properties };
+        })
+      );
+
       reply.send({
-        databases: databases.map((d) => ({
+        databases: databasesWithProperties.map((d) => ({
           id: d.id,
           name: d.name,
-          projectId: d.projectId,
+          projectId: d.project_id,
           properties: d.properties.map((p) => ({
             id: p.id,
             name: p.name,
@@ -69,37 +101,50 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const database = await prisma.database.findUnique({
-        where: { id: databaseId },
-      });
+      const database = await queryOne<DatabaseRow>(
+        'SELECT id, name, project_id FROM databases WHERE id = $1',
+        [databaseId]
+      );
 
       if (!database) {
         throw new NotFoundError('Database');
       }
 
-      const instances = await prisma.databaseInstance.findMany({
-        where: { databaseId },
-        include: {
-          values: {
-            include: {
-              property: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const instances = await queryMany<InstanceRow>(
+        'SELECT id, database_id, created_at, updated_at FROM database_instances WHERE database_id = $1 ORDER BY created_at DESC',
+        [databaseId]
+      );
+
+      const instancesWithValues = await Promise.all(
+        instances.map(async (instance) => {
+          const values = await queryMany<InstanceValueRow>(
+            `SELECT 
+              div.property_id,
+              dp.name as property_name,
+              div.value
+            FROM database_instance_values div
+            JOIN database_properties dp ON div.property_id = dp.id
+            WHERE div.instance_id = $1`,
+            [instance.id]
+          );
+          return {
+            ...instance,
+            values: values.map((v) => ({
+              propertyId: v.property_id,
+              propertyName: v.property_name,
+              value: v.value,
+            })),
+          };
+        })
+      );
 
       reply.send({
-        instances: instances.map((i) => ({
+        instances: instancesWithValues.map((i) => ({
           id: i.id,
-          databaseId: i.databaseId,
-          values: i.values.map((v) => ({
-            propertyId: v.propertyId,
-            propertyName: v.property.name,
-            value: v.value,
-          })),
-          createdAt: i.createdAt.toISOString(),
-          updatedAt: i.updatedAt.toISOString(),
+          databaseId: i.database_id,
+          values: i.values,
+          createdAt: i.created_at.toISOString(),
+          updatedAt: i.updated_at.toISOString(),
         })),
       });
     }
@@ -119,58 +164,70 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const database = await prisma.database.findUnique({
-        where: { id: databaseId },
-        include: { properties: true },
-      });
+      const database = await queryOne<DatabaseRow>(
+        'SELECT id, name, project_id FROM databases WHERE id = $1',
+        [databaseId]
+      );
 
       if (!database) {
         throw new NotFoundError('Database');
       }
 
-      const instance = await prisma.$transaction(async (tx) => {
-        const newInstance = await tx.databaseInstance.create({
-          data: { databaseId },
-        });
+      const properties = await queryMany<PropertyRow>(
+        'SELECT id, name, type FROM database_properties WHERE database_id = $1',
+        [databaseId]
+      );
+
+      const instance = await transaction(async (client) => {
+        const instanceId = crypto.randomUUID();
+        await client.query(
+          'INSERT INTO database_instances (id, database_id, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())',
+          [instanceId, databaseId]
+        );
 
         // Create empty values for all properties
         await Promise.all(
-          database.properties.map((property) =>
-            tx.databaseInstanceValue.create({
-              data: {
-                instanceId: newInstance.id,
-                propertyId: property.id,
-                value: '',
-              },
-            })
+          properties.map((property) =>
+            client.query(
+              'INSERT INTO database_instance_values (id, instance_id, property_id, value, updated_at) VALUES (gen_random_uuid(), $1, $2, $3, NOW())',
+              [instanceId, property.id, '']
+            )
           )
         );
 
-        const instanceWithValues = await tx.databaseInstance.findUnique({
-          where: { id: newInstance.id },
-          include: {
-            values: {
-              include: {
-                property: true,
-              },
-            },
-          },
-        });
+        const instance = await client.query<InstanceRow>(
+          'SELECT id, database_id, created_at, updated_at FROM database_instances WHERE id = $1',
+          [instanceId]
+        );
 
-        return instanceWithValues!;
+        const values = await client.query<InstanceValueRow>(
+          `SELECT 
+            div.property_id,
+            dp.name as property_name,
+            div.value
+          FROM database_instance_values div
+          JOIN database_properties dp ON div.property_id = dp.id
+          WHERE div.instance_id = $1`,
+          [instanceId]
+        );
+
+        return {
+          ...instance.rows[0],
+          values: values.rows.map((v) => ({
+            propertyId: v.property_id,
+            propertyName: v.property_name,
+            value: v.value,
+          })),
+        };
       });
 
       reply.status(201).send({
         instance: {
           id: instance.id,
-          databaseId: instance.databaseId,
-          values: instance.values.map((v) => ({
-            propertyId: v.propertyId,
-            propertyName: v.property.name,
-            value: v.value,
-          })),
-          createdAt: instance.createdAt.toISOString(),
-          updatedAt: instance.updatedAt.toISOString(),
+          databaseId: instance.database_id,
+          values: instance.values,
+          createdAt: instance.created_at.toISOString(),
+          updatedAt: instance.updated_at.toISOString(),
         },
       });
     }
@@ -218,59 +275,59 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const instance = await prisma.databaseInstance.findUnique({
-        where: { id: instanceId },
-        include: { database: true },
-      });
+      const instance = await queryOne<InstanceRow & { database_id: string }>(
+        'SELECT id, database_id FROM database_instances WHERE id = $1',
+        [instanceId]
+      );
 
-      if (!instance || instance.databaseId !== databaseId) {
+      if (!instance || instance.database_id !== databaseId) {
         throw new NotFoundError('Instance');
       }
 
-      const property = await prisma.databaseProperty.findUnique({
-        where: { id: propertyId },
-      });
+      const property = await queryOne<PropertyRow & { database_id: string }>(
+        'SELECT id, name, type, database_id FROM database_properties WHERE id = $1',
+        [propertyId]
+      );
 
-      if (!property || property.databaseId !== databaseId) {
+      if (!property || property.database_id !== databaseId) {
         throw new NotFoundError('Property');
       }
 
-      await prisma.databaseInstanceValue.upsert({
-        where: {
-          instanceId_propertyId: {
-            instanceId,
-            propertyId,
-          },
-        },
-        update: { value },
-        create: {
-          instanceId,
-          propertyId,
-          value,
-        },
-      });
+      // Upsert value
+      await query(
+        `INSERT INTO database_instance_values (id, instance_id, property_id, value, updated_at)
+        VALUES (gen_random_uuid(), $1, $2, $3, NOW())
+        ON CONFLICT (instance_id, property_id)
+        DO UPDATE SET value = $3, updated_at = NOW()`,
+        [instanceId, propertyId, value]
+      );
 
-      const updatedInstance = await prisma.databaseInstance.findUnique({
-        where: { id: instanceId },
-        include: {
-          values: {
-            include: {
-              property: true,
-            },
-          },
-        },
-      });
+      const updatedInstance = await queryOne<InstanceRow>(
+        'SELECT id, database_id, created_at, updated_at FROM database_instances WHERE id = $1',
+        [instanceId]
+      );
+
+      const values = await queryMany<InstanceValueRow>(
+        `SELECT 
+          div.property_id,
+          dp.name as property_name,
+          div.value
+        FROM database_instance_values div
+        JOIN database_properties dp ON div.property_id = dp.id
+        WHERE div.instance_id = $1`,
+        [instanceId]
+      );
 
       reply.send({
         instance: {
           id: updatedInstance!.id,
-          databaseId: updatedInstance!.databaseId,
-          values: updatedInstance!.values.map((v) => ({
-            propertyId: v.propertyId,
-            propertyName: v.property.name,
+          databaseId: updatedInstance!.database_id,
+          values: values.map((v) => ({
+            propertyId: v.property_id,
+            propertyName: v.property_name,
             value: v.value,
           })),
-          updatedAt: updatedInstance!.updatedAt.toISOString(),
+          updatedAt: updatedInstance!.updated_at.toISOString(),
         },
       });
     }
@@ -292,17 +349,16 @@ export async function databaseRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const instance = await prisma.databaseInstance.findUnique({
-        where: { id: instanceId },
-      });
+      const instance = await queryOne<InstanceRow & { database_id: string }>(
+        'SELECT id, database_id FROM database_instances WHERE id = $1',
+        [instanceId]
+      );
 
-      if (!instance || instance.databaseId !== databaseId) {
+      if (!instance || instance.database_id !== databaseId) {
         throw new NotFoundError('Instance');
       }
 
-      await prisma.databaseInstance.delete({
-        where: { id: instanceId },
-      });
+      await query('DELETE FROM database_instances WHERE id = $1', [instanceId]);
 
       reply.send({ message: 'Instance deleted successfully' });
     }

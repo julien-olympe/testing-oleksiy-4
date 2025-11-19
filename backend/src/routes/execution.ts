@@ -4,7 +4,12 @@ import { NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { checkProjectAccess } from '../utils/permissions';
 import { ExecutionEngine } from '../utils/execution-engine';
-import { prisma } from '../db/client';
+import { queryOne } from '../db/client';
+
+interface FunctionRow {
+  id: string;
+  project_id: string;
+}
 
 export async function executionRoutes(fastify: FastifyInstance): Promise<void> {
   // POST /api/v1/functions/:id/run
@@ -17,16 +22,16 @@ export async function executionRoutes(fastify: FastifyInstance): Promise<void> {
 
       validateUUID(functionId, 'id');
 
-      const func = await prisma.function.findUnique({
-        where: { id: functionId },
-        include: { project: true },
-      });
+      const func = await queryOne<FunctionRow>(
+        'SELECT id, project_id FROM functions WHERE id = $1',
+        [functionId]
+      );
 
       if (!func) {
         throw new NotFoundError('Function');
       }
 
-      await checkProjectAccess(userId, func.projectId);
+      await checkProjectAccess(userId, func.project_id);
 
       const execution = await ExecutionEngine.executeFunction(functionId);
 

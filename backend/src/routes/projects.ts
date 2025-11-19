@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../db/client';
+import { query, queryOne, queryMany } from '../db/client';
 import { validateUUID } from '../utils/validation';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
@@ -11,6 +11,14 @@ interface CreateProjectBody {
 
 interface UpdateProjectBody {
   name: string;
+}
+
+interface ProjectRow {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
@@ -35,47 +43,33 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       // Get projects where user is owner or has permission
-      const [projects, total] = await Promise.all([
-        prisma.project.findMany({
-          where: {
-            OR: [
-              { ownerId: userId },
-              {
-                permissions: {
-                  some: {
-                    userId,
-                  },
-                },
-              },
-            ],
-          },
-          orderBy: { createdAt: 'desc' },
-          take: limit,
-          skip: offset,
-        }),
-        prisma.project.count({
-          where: {
-            OR: [
-              { ownerId: userId },
-              {
-                permissions: {
-                  some: {
-                    userId,
-                  },
-                },
-              },
-            ],
-          },
-        }),
-      ]);
+      const projects = await queryMany<ProjectRow>(
+        `SELECT DISTINCT p.id, p.name, p.owner_id, p.created_at, p.updated_at
+        FROM projects p
+        LEFT JOIN project_permissions pp ON p.id = pp.project_id
+        WHERE p.owner_id = $1 OR pp.user_id = $1
+        ORDER BY p.created_at DESC
+        LIMIT $2 OFFSET $3`,
+        [userId, limit, offset]
+      );
+
+      const totalResult = await queryOne<{ count: string }>(
+        `SELECT COUNT(DISTINCT p.id)::text as count
+        FROM projects p
+        LEFT JOIN project_permissions pp ON p.id = pp.project_id
+        WHERE p.owner_id = $1 OR pp.user_id = $1`,
+        [userId]
+      );
+
+      const total = parseInt(totalResult?.count || '0', 10);
 
       reply.send({
         projects: projects.map((p) => ({
           id: p.id,
           name: p.name,
-          ownerId: p.ownerId,
-          createdAt: p.createdAt.toISOString(),
-          updatedAt: p.updatedAt.toISOString(),
+          ownerId: p.owner_id,
+          createdAt: p.created_at.toISOString(),
+          updatedAt: p.updated_at.toISOString(),
         })),
         pagination: {
           limit,
@@ -109,20 +103,25 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
-      const project = await prisma.project.create({
-        data: {
-          name: projectName,
-          ownerId: userId,
-        },
-      });
+      const projectId = crypto.randomUUID();
+
+      await query(
+        'INSERT INTO projects (id, name, owner_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW())',
+        [projectId, projectName, userId]
+      );
+
+      const project = await queryOne<ProjectRow>(
+        'SELECT id, name, owner_id, created_at, updated_at FROM projects WHERE id = $1',
+        [projectId]
+      );
 
       reply.status(201).send({
         project: {
-          id: project.id,
-          name: project.name,
-          ownerId: project.ownerId,
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          id: project!.id,
+          name: project!.name,
+          ownerId: project!.owner_id,
+          createdAt: project!.created_at.toISOString(),
+          updatedAt: project!.updated_at.toISOString(),
         },
       });
     }
@@ -140,9 +139,10 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-      });
+      const project = await queryOne<ProjectRow>(
+        'SELECT id, name, owner_id, created_at, updated_at FROM projects WHERE id = $1',
+        [projectId]
+      );
 
       if (!project) {
         throw new NotFoundError('Project');
@@ -152,9 +152,9 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         project: {
           id: project.id,
           name: project.name,
-          ownerId: project.ownerId,
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          ownerId: project.owner_id,
+          createdAt: project.created_at.toISOString(),
+          updatedAt: project.updated_at.toISOString(),
         },
       });
     }
@@ -185,18 +185,23 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const project = await prisma.project.update({
-        where: { id: projectId },
-        data: { name },
-      });
+      await query('UPDATE projects SET name = $1, updated_at = NOW() WHERE id = $2', [
+        name,
+        projectId,
+      ]);
+
+      const project = await queryOne<ProjectRow>(
+        'SELECT id, name, owner_id, created_at, updated_at FROM projects WHERE id = $1',
+        [projectId]
+      );
 
       reply.send({
         project: {
-          id: project.id,
-          name: project.name,
-          ownerId: project.ownerId,
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          id: project!.id,
+          name: project!.name,
+          ownerId: project!.owner_id,
+          createdAt: project!.created_at.toISOString(),
+          updatedAt: project!.updated_at.toISOString(),
         },
       });
     }
@@ -215,9 +220,7 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
       await checkProjectOwnership(userId, projectId);
 
       // Delete project (cascade will handle related data)
-      await prisma.project.delete({
-        where: { id: projectId },
-      });
+      await query('DELETE FROM projects WHERE id = $1', [projectId]);
 
       reply.send({ message: 'Project deleted successfully' });
     }
@@ -235,88 +238,180 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
 
       await checkProjectAccess(userId, projectId);
 
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-          functions: {
-            include: {
-              bricks: {
-                include: {
-                  connectionsFrom: true,
-                  connectionsTo: true,
-                },
-              },
-            },
-          },
-          databases: {
-            include: {
-              properties: true,
-            },
-          },
-          permissions: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-      });
+      const project = await queryOne<ProjectRow>(
+        'SELECT id, name, owner_id, created_at, updated_at FROM projects WHERE id = $1',
+        [projectId]
+      );
 
       if (!project) {
         throw new NotFoundError('Project');
       }
 
-      // Get default database (system database)
-      const defaultDatabase = await prisma.database.findFirst({
-        where: {
-          name: 'default database',
-          projectId: '00000000-0000-0000-0000-000000000000', // System project ID
-        },
-        include: {
-          properties: true,
-        },
-      });
+      // Get functions
+      const functions = await queryMany<{
+        id: string;
+        name: string;
+        project_id: string;
+        created_at: Date;
+        updated_at: Date;
+      }>(
+        'SELECT id, name, project_id, created_at, updated_at FROM functions WHERE project_id = $1',
+        [projectId]
+      );
 
-      // Get instances for project databases
-      const projectDatabasesWithInstances = await Promise.all(
-        project.databases.map(async (db) => {
-          const instances = await prisma.databaseInstance.findMany({
-            where: { databaseId: db.id },
-            include: {
-              values: {
-                include: {
-                  property: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'desc' },
-          });
-          return { ...db, instances };
+      // Get permissions
+      const permissions = await queryMany<{
+        user_id: string;
+        user_email: string;
+        created_at: Date;
+      }>(
+        `SELECT pp.user_id, u.email as user_email, pp.created_at
+        FROM project_permissions pp
+        JOIN users u ON pp.user_id = u.id
+        WHERE pp.project_id = $1
+        ORDER BY pp.created_at ASC`,
+        [projectId]
+      );
+
+      // Get project databases with properties
+      const projectDatabases = await queryMany<{
+        id: string;
+        name: string;
+        project_id: string;
+        created_at: Date;
+      }>('SELECT id, name, project_id, created_at FROM databases WHERE project_id = $1', [
+        projectId,
+      ]);
+
+      // Get properties for each database
+      const databasesWithProperties = await Promise.all(
+        projectDatabases.map(async (db) => {
+          const properties = await queryMany<{
+            id: string;
+            name: string;
+            type: string;
+            created_at: Date;
+          }>(
+            'SELECT id, name, type, created_at FROM database_properties WHERE database_id = $1',
+            [db.id]
+          );
+          return { ...db, properties };
         })
       );
 
-      // Get instances for default database (all instances, as default database is shared)
-      const defaultDatabaseWithInstances = defaultDatabase
-        ? {
-            ...defaultDatabase,
-            instances: await prisma.databaseInstance.findMany({
-              where: { databaseId: defaultDatabase.id },
-              include: {
-                values: {
-                  include: {
-                    property: true,
-                  },
-                },
-              },
-              orderBy: { createdAt: 'desc' },
-            }),
-          }
-        : null;
+      // Get default database (system database)
+      const defaultDatabase = await queryOne<{
+        id: string;
+        name: string;
+        project_id: string;
+        created_at: Date;
+      }>(
+        "SELECT id, name, project_id, created_at FROM databases WHERE name = 'default database' AND project_id = '00000000-0000-0000-0000-000000000000'"
+      );
+
+      let defaultDatabaseWithProperties = null;
+      if (defaultDatabase) {
+        const properties = await queryMany<{
+          id: string;
+          name: string;
+          type: string;
+          created_at: Date;
+        }>(
+          'SELECT id, name, type, created_at FROM database_properties WHERE database_id = $1',
+          [defaultDatabase.id]
+        );
+        defaultDatabaseWithProperties = { ...defaultDatabase, properties };
+      }
+
+      // Get instances for project databases
+      const projectDatabasesWithInstances = await Promise.all(
+        databasesWithProperties.map(async (db) => {
+          const instances = await queryMany<{
+            id: string;
+            database_id: string;
+            created_at: Date;
+            updated_at: Date;
+          }>(
+            'SELECT id, database_id, created_at, updated_at FROM database_instances WHERE database_id = $1 ORDER BY created_at DESC',
+            [db.id]
+          );
+
+          const instancesWithValues = await Promise.all(
+            instances.map(async (instance) => {
+              const values = await queryMany<{
+                property_id: string;
+                property_name: string;
+                value: string;
+              }>(
+                `SELECT 
+                  div.property_id,
+                  dp.name as property_name,
+                  div.value
+                FROM database_instance_values div
+                JOIN database_properties dp ON div.property_id = dp.id
+                WHERE div.instance_id = $1`,
+                [instance.id]
+              );
+              return {
+                ...instance,
+                values: values.map((v) => ({
+                  propertyId: v.property_id,
+                  propertyName: v.property_name,
+                  value: v.value,
+                })),
+              };
+            })
+          );
+
+          return { ...db, instances: instancesWithValues };
+        })
+      );
+
+      // Get instances for default database
+      let defaultDatabaseWithInstances = null;
+      if (defaultDatabaseWithProperties) {
+        const instances = await queryMany<{
+          id: string;
+          database_id: string;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          'SELECT id, database_id, created_at, updated_at FROM database_instances WHERE database_id = $1 ORDER BY created_at DESC',
+          [defaultDatabaseWithProperties.id]
+        );
+
+        const instancesWithValues = await Promise.all(
+          instances.map(async (instance) => {
+            const values = await queryMany<{
+              property_id: string;
+              property_name: string;
+              value: string;
+            }>(
+              `SELECT 
+                div.property_id,
+                dp.name as property_name,
+                div.value
+              FROM database_instance_values div
+              JOIN database_properties dp ON div.property_id = dp.id
+              WHERE div.instance_id = $1`,
+              [instance.id]
+            );
+            return {
+              ...instance,
+              values: values.map((v) => ({
+                propertyId: v.property_id,
+                propertyName: v.property_name,
+                value: v.value,
+              })),
+            };
+          })
+        );
+
+        defaultDatabaseWithInstances = {
+          ...defaultDatabaseWithProperties,
+          instances: instancesWithValues,
+        };
+      }
 
       // Combine default database with project databases
       const allDatabases = defaultDatabaseWithInstances
@@ -327,43 +422,39 @@ export async function projectRoutes(fastify: FastifyInstance): Promise<void> {
         project: {
           id: project.id,
           name: project.name,
-          ownerId: project.ownerId,
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          ownerId: project.owner_id,
+          createdAt: project.created_at.toISOString(),
+          updatedAt: project.updated_at.toISOString(),
         },
-        functions: project.functions.map((f) => ({
+        functions: functions.map((f) => ({
           id: f.id,
           name: f.name,
-          projectId: f.projectId,
-          createdAt: f.createdAt.toISOString(),
-          updatedAt: f.updatedAt.toISOString(),
+          projectId: f.project_id,
+          createdAt: f.created_at.toISOString(),
+          updatedAt: f.updated_at.toISOString(),
         })),
-        permissions: project.permissions.map((p) => ({
-          userId: p.userId,
-          userEmail: p.user.email,
-          createdAt: p.createdAt.toISOString(),
+        permissions: permissions.map((p) => ({
+          userId: p.user_id,
+          userEmail: p.user_email,
+          createdAt: p.created_at.toISOString(),
         })),
         databases: allDatabases.map((d) => ({
           id: d.id,
           name: d.name,
-          projectId: d.projectId,
-          createdAt: d.createdAt.toISOString(),
+          projectId: d.project_id,
+          createdAt: d.created_at.toISOString(),
           properties: d.properties.map((p) => ({
             id: p.id,
             name: p.name,
             type: p.type,
-            createdAt: p.createdAt.toISOString(),
+            createdAt: p.created_at.toISOString(),
           })),
           instances: (d.instances || []).map((i) => ({
             id: i.id,
-            databaseId: i.databaseId,
-            values: i.values.map((v) => ({
-              propertyId: v.propertyId,
-              propertyName: v.property.name,
-              value: v.value,
-            })),
-            createdAt: i.createdAt.toISOString(),
-            updatedAt: i.updatedAt.toISOString(),
+            databaseId: i.database_id,
+            values: i.values,
+            createdAt: i.created_at.toISOString(),
+            updatedAt: i.updated_at.toISOString(),
           })),
         })),
       });

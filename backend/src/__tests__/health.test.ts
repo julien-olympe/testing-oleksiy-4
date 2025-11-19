@@ -1,9 +1,9 @@
-import { prisma } from '../db/client';
+import { query } from '../db/client';
 import { config } from '../config/env';
 
 describe('Health Check', () => {
   test('Database is reachable', async () => {
-    await expect(prisma.$queryRaw`SELECT 1`).resolves.toBeDefined();
+    await expect(query('SELECT 1')).resolves.toBeDefined();
   });
 
   test('Database connection string is configured', () => {
